@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <title>新社会人AIクエスト(Web試作版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,6 +39,10 @@ canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: blo
 button { font-family: var(--font-body); cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
 .hidden { display: none !important; }
+/* ダブルタップで拡大しない(ボタンや画面は manipulation、ゲームの部分は none) */
+*, *::before, *::after { touch-action: manipulation; }
+canvas, #touch, #touch * { touch-action: none; }
+input { user-select: text; -webkit-user-select: text; }
 
 /* ---- 画面(オーバーレイ) ---- */
 .screen {
@@ -157,6 +161,21 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
 .panel .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 .panel .btn { background: var(--ink); color: var(--paper); }
 .panel .btn.primary { background: var(--yellow); color: var(--ink); }
+.rank-box { border-top: 2px solid var(--line); margin-top: 12px; padding-top: 12px; font-size: 14px; }
+.rank-box .fields { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.rank-box input { flex: 1 1 140px; min-width: 0; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 6px;
+  border: 2px solid var(--line); background: #fff; color: var(--ink); }
+.rank-box input:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+.rank-box .msg { min-height: 1.6em; margin: 4px 0 0; font-weight: 700; }
+.rank-box .msg.bad { color: var(--vermilion); }
+.rank-box .msg.good { color: var(--green); }
+.rank-box .linky { background: none; border: 0; padding: 4px 0; color: var(--ink); text-decoration: underline; font-size: 13px; font-weight: 700; }
+.rank-note { font-size: 13px; opacity: .75; }
+.rank-list { margin: 8px 0 0; padding: 0; list-style: none; max-height: 52vh; overflow-y: auto; }
+.rank-list li { display: grid; grid-template-columns: 2.4em 1fr auto; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.rank-list li b { font-variant-numeric: tabular-nums; }
+.rank-list li.me { background: rgba(240, 228, 66, .45); }
+.rank-list .num { font-weight: 800; text-align: right; }
 .seg { display: inline-flex; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 2px var(--ink); }
 .seg button { border: 0; background: none; padding: 8px 14px; font-weight: 800; font-size: 14px; color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
@@ -193,7 +212,7 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
       <button class="punch" id="goPC">PCで出勤する<small>キーボードとマウスで遊ぶ</small><span class="stamp">出勤</span></button>
       <button class="punch" id="goTouch">スマホで出勤する<small>画面のスティックとボタンで遊ぶ</small><span class="stamp">出勤</span></button>
     </div>
-    <div class="tc-foot"><span id="bestLine">自己ベスト:まだ記録なし</span><button id="openHelpTitle">あそびかた</button></div>
+    <div class="tc-foot"><span id="bestLine">自己ベスト:まだ記録なし</span><span><button id="openRankTitle">ランキング</button><button id="openHelpTitle">あそびかた</button></span></div>
   </div>
 </section>
 
@@ -253,10 +272,21 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
   <div class="panel">
     <h2 id="rTitle">おつかれさまでした!</h2>
     <p id="rBody"></p>
+    <div id="rRank" class="rank-box hidden"></div>
     <div class="row">
       <button class="btn primary" id="rNext">次へ</button>
       <button class="btn" id="rMenu">キャラ選択へ</button>
     </div>
+  </div>
+</section>
+
+<!-- ランキング -->
+<section id="ranking" class="screen dim hidden" aria-label="ランキング">
+  <div class="panel">
+    <h2>ランキング</h2>
+    <p class="rank-note">PC版(exe)とWeb版、みんなの自己ベスト</p>
+    <ol id="rankList" class="rank-list"></ol>
+    <div class="row"><button class="btn primary" id="closeRank">もどる</button></div>
   </div>
 </section>
 
@@ -501,6 +531,7 @@ function spawnEnemy(d, boss) {
 // ---------------- プレイヤー ----------------
 function startRun(ch) {
   G.char = ch; G.score = 0; G.lives = 3; G.ammo = 0; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
+  G.submitted = false;
   if (G.hero) scene.remove(G.hero);
   G.hero = makeHero(ch.look); scene.add(G.hero);
   G.player = G.hero.position;
@@ -715,21 +746,52 @@ function saveBest() {
 }
 
 // ---------------- 入力(PC) ----------------
+// キーボード上の「位置」(e.code)で判定する。日本語入力がオンでも効くように
+// (e.key だと、日本語入力オンのとき文字キーが「Process」になってしまう)
+function keyOf(e) {
+  const c = e.code || '';
+  if (c.startsWith('Key')) return c.slice(3).toLowerCase();
+  if (c === 'Space') return ' ';
+  if (c === 'NumpadEnter') return 'Enter';
+  if (c.startsWith('Arrow') || c === 'Escape' || c === 'Enter') return c;
+  return e.key && e.key.length === 1 ? e.key.toLowerCase() : e.key;
+}
 window.addEventListener('keydown', e => {
-  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
-  if (keys[k]) return; keys[k] = true;
+  if (e.target && e.target.tagName === 'INPUT') {          // 名前などの入力中はゲームの操作にしない
+    if (e.key === 'Enter') e.target.dispatchEvent(new Event('enterkey'));
+    return;
+  }
+  const k = keyOf(e);
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(k)) e.preventDefault();
+  keys[k] = true;
+  if (e.repeat) return;
   if (G.mode === 'play') {
     if (k === ' ' && G.grounded) jump();
     if (k === 'f') throwAI();
     if (k === 'h' || k === 'Escape') openPause();
     if (k === 'r') retryStage();
-  } else if (G.mode === 'pause' && (k === 'h' || k === 'Escape')) closePause();
+  } else if (G.mode === 'pause') {
+    if (k === 'h' || k === 'Escape' || k === 'Enter') closePause();
+  } else if (G.mode === 'title') {
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); chooseDevice('pc'); }
+    if (k === 'l') openRanking();
+  } else if (G.mode === 'charsel') {
+    if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
+    if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
+    if (k === 'Escape') { refreshTitle(); setMode('title'); }
+  } else if (G.mode === 'result') {
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); resultNext && resultNext(); }
+    if (k === 'Escape') openCharsel();
+  } else if (G.mode === 'ranking') {
+    if (k === 'Enter' || k === 'Escape' || k === ' ') closeRanking();
+  }
 });
 window.addEventListener('keyup', e => {
-  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys[k] = false;
+  const k = keyOf(e); keys[k] = false;
   if (k === ' ') jumpRelease();
 });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });   // 別の画面に移ったら押しっぱなしを解除
 canvas.addEventListener('mousedown', () => { if (G.mode === 'play' && G.device === 'pc') throwAI(); });
 function jump() { G.vy = BASE_JUMP * G.char.jump; G.grounded = false; sfx.jump(); }
 function jumpRelease() { if (G.vy > 0) G.vy *= 0.5; }   // 短く押すと小ジャンプ
@@ -824,6 +886,7 @@ function setMode(m) {
   $('charsel').classList.toggle('hidden', m !== 'charsel');
   $('pause').classList.toggle('hidden', m !== 'pause');
   $('result').classList.toggle('hidden', m !== 'result');
+  $('ranking').classList.toggle('hidden', m !== 'ranking');
   const inGame = ['play', 'pause', 'result'].includes(m);
   $('hud').classList.toggle('hidden', !inGame);
   $('touch').classList.toggle('hidden', !(m === 'play' && G.device === 'touch'));
@@ -885,11 +948,15 @@ function openCharsel() {
       <div><span>AI精度</span><span>${stars(3 + (1 - c.hallu) * 3)}</span></div>
       <div><span>AIを続けて投げられる数</span><span>${c.shots}個</span></div>
       <div><span>スコア倍率</span><span class="mult">×${c.score}</span></div></div>`;
-    b.onclick = () => { picked = i; [...wrap.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === i))); };
+    b.onclick = () => setPicked(i);
     b.ondblclick = () => { picked = i; startRun(CHARS[picked]); };
     wrap.appendChild(b);
   });
   setMode('charsel');
+}
+function setPicked(i) {
+  picked = (i + CHARS.length) % CHARS.length;
+  [...$('cards').children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === picked)));
 }
 $('startGame').onclick = () => startRun(CHARS[picked]);
 $('backTitle').onclick = () => { refreshTitle(); setMode('title'); };
@@ -927,6 +994,8 @@ function retryStage() { const keep = G.ammo; buildStage(G.stage); G.ammo = Math.
 let resultNext = null;
 function showResult(kind) {
   setMode('result');
+  $('rRank').classList.add('hidden');
+  if (kind !== 'clear' && G.score > 0) rankBox();
   if (kind === 'clear') {
     $('rTitle').textContent = 'GO HOME ON TIME!';
     $('rBody').textContent = `${STAGES[G.stage].name} クリア! 今のスコアは ${G.score}点。次は「${STAGES[G.stage + 1].name}」だよ。`;
@@ -945,6 +1014,106 @@ function showResult(kind) {
 }
 $('rNext').onclick = () => resultNext && resultNext();
 $('rMenu').onclick = () => openCharsel();
+
+// ---------------- オンラインランキング(Python版と同じ Google Apps Script のサーバー) ----------------
+// ※ このページはだれでも中身(ソース)を見られるので、合言葉も見えてしまう。友達と遊ぶぶんには十分
+const ONLINE = {
+  url: 'https://script.google.com/macros/s/AKfycbxTvs5NAga9sM-6Ji-9mZY4aAiH14IkX7FoIbar6lntoAS1cwmXs_DfK8vGgHNuvVJ_/exec',
+  secret: 'ima8909shiko',
+};
+const NAME_RE = /^[A-Za-z0-9_-]{1,12}$/, PASS_RE = /^[A-Za-z0-9]{4,12}$/;
+async function gasPost(body) {
+  // Content-Type を付けない(text/plain になる)と、ブラウザの事前確認なしでGASに送れる
+  const r = await fetch(ONLINE.url, { method: 'POST', body: JSON.stringify(Object.assign({ key: ONLINE.secret }, body)) });
+  return r.json();
+}
+async function gasTop(n) { const r = await fetch(ONLINE.url + '?n=' + n); return r.json(); }
+function nowStamp() {
+  const d = new Date(), z = v => String(v).padStart(2, '0');
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+
+// 結果画面の「ランキングに登録」
+function rankBox() {
+  const box = $('rRank'); box.classList.remove('hidden');
+  const acct = store.get('acct', null);
+  if (G.submitted) return;
+  if (acct) {
+    box.innerHTML = `<b>オンラインランキング</b>
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="rkSend">${acct.name} として登録する</button>
+      <button class="linky" id="rkOther">別の名前で登録する</button></div><p class="msg" id="rkMsg"></p>`;
+    $('rkSend').onclick = () => sendScore(acct);
+    $('rkOther').onclick = () => { store.set('acct', null); rankBox(); };
+  } else {
+    box.innerHTML = `<b>オンラインランキングに登録する</b>
+      <div class="fields"><input id="rkName" placeholder="名前(英数字12文字まで)" maxlength="12" autocomplete="username" inputmode="latin">
+      <input id="rkPass" type="password" placeholder="パスワード(英数字4〜12文字)" maxlength="12" autocomplete="current-password"></div>
+      <div class="row"><button class="btn primary" id="rkLogin">登録する</button></div>
+      <p class="msg" id="rkMsg">はじめての名前は、そのパスワードで新しく作られます</p>`;
+    const go = () => login($('rkName').value.trim(), $('rkPass').value);
+    $('rkLogin').onclick = go;
+    $('rkPass').addEventListener('enterkey', go); $('rkName').addEventListener('enterkey', () => $('rkPass').focus());
+  }
+}
+function rkMsg(text, kind = '') { const m = $('rkMsg'); if (m) { m.textContent = text; m.className = 'msg ' + kind; } }
+async function login(name, pass) {
+  if (!NAME_RE.test(name)) return rkMsg('名前は英数字と - _ で12文字まで', 'bad');
+  if (!PASS_RE.test(pass)) return rkMsg('パスワードは英数字4〜12文字', 'bad');
+  rkMsg('確認中…');
+  try {
+    const res = await gasPost({ action: 'auth', name, pass });
+    if (!res.ok) return rkMsg(res.error === 'taken' ? 'この名前は使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
+    const acct = { name: res.name, token: res.token };
+    store.set('acct', acct);
+    await sendScore(acct);
+  } catch (e) { rkMsg('サーバーにつながりませんでした。少ししてからもう一度', 'bad'); }
+}
+async function sendScore(acct) {
+  if (G.submitted) return;
+  rkMsg('送信中…');
+  const b = $('rkSend') || $('rkLogin'); if (b) b.disabled = true;
+  try {
+    const res = await gasPost({ name: acct.name, token: acct.token, score: G.score, stage: G.stage + 1,
+                                character: G.char.name + '(Web)', clear: false, date: nowStamp() });
+    if (res.ok) {
+      G.submitted = true;
+      $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位(${res.total}人中)</p>
+        <button class="linky" id="rkView">ランキングを見る</button>`;
+      $('rkView').onclick = openRanking;
+    } else if (res.error === 'not owner') {
+      store.set('acct', null); rankBox(); rkMsg('もう一度ログインしてね', 'bad');
+    } else { rkMsg('登録できませんでした:' + res.error, 'bad'); if (b) b.disabled = false; }
+  } catch (e) { rkMsg('サーバーにつながりませんでした。少ししてからもう一度', 'bad'); if (b) b.disabled = false; }
+}
+
+// ランキング画面
+let rankFrom = 'title';
+async function openRanking() {
+  rankFrom = G.mode; setMode('ranking');
+  const list = $('rankList'); list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
+  const me = (store.get('acct', null) || {}).name;
+  try {
+    const res = await gasTop(10);
+    const rows = (res.scores || []);
+    list.innerHTML = rows.length ? rows.map((e, i) =>
+      `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`).join('')
+      : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
+  } catch (e) { list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
+}
+function closeRanking() { setMode(rankFrom === 'result' ? 'result' : 'title'); }
+function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+$('openRankTitle').onclick = openRanking;
+$('closeRank').onclick = closeRanking;
+
+// ダブルタップ・ピンチで拡大しない(iPhone の Safari は viewport の指定だけでは止まらないため)
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd < 350 && !(e.target && e.target.tagName === 'INPUT')) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
 
 // 縦向き
 let rotateOk = false;
