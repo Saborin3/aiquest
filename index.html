@@ -346,6 +346,7 @@ body.touch .kh { display: none; }
     <p style="margin-top:8px">操作方法
       <span class="seg" role="group" aria-label="操作方法"><button id="segPC">PC</button><button id="segTouch">スマホ</button></span>
       &nbsp; 声 <span class="seg" role="group" aria-label="キャラの声"><button id="vOn">ON</button><button id="vOff">OFF</button></span>
+      &nbsp; BGM <span class="seg" role="group" aria-label="BGM"><button id="mOn">ON</button><button id="mOff">OFF</button></span>
     </p>
     <div class="row">
       <button class="btn primary" id="resume">つづける</button>
@@ -564,6 +565,110 @@ function say(who, key) {
   src.buffer = buf; src.connect(g).connect(actx.destination); src.start();
 }
 fetch('voices/credits.txt').then(r => r.ok ? r.text() : '').then(t => { VOICE.credit = (t || '').trim(); }).catch(() => {});
+
+// ---------------- BGM(プログラムで作曲したチップチューン。楽譜は Python版の bgm_songs.json と同じ) ----------------
+// 音の名前/長さ(16分音符いくつ分)。chords から和音(アルペジオ)とベースを自動で作る
+const SONGS = {"title": {"bpm": 112, "chords": ["F", "G", "Em", "Am", "Dm", "G", "C", "C"], "lead": "C6/6 A5/2 F5/4 A5/4  D6/6 B5/2 G5/4 B5/4  E6/6 D6/2 B5/4 G5/4  C6/8 A5/8  F5/4 A5/4 D6/4 C6/4  B5/4 D6/4 G6/4 F6/4  E6/8 G5/4 C6/4  C6/12 ./4", "lead_wave": "pulse50", "lead_vol": 0.055, "arp": "up", "arp_vol": 0.022, "bass": "half", "bass_vol": 0.09, "kick": "x.......x.......", "snare": "", "hat": "....x.......x...", "drum_vol": 0.5}, "stage": {"bpm": 132, "chords": ["C", "Am", "F", "G", "C", "Am", "G", "C"], "lead": "E5/2 G5/2 C6/4 B5/2 G5/2 E5/4  A5/2 G5/2 E5/2 C5/2 E5/4 ./4  F5/2 A5/2 C6/2 A5/2 G5/4 F5/4  G5/2 B5/2 D6/4 B5/2 G5/2 D5/4  E5/2 G5/2 C6/4 D6/2 E6/2 C6/4  A5/4 C6/2 A5/2 E5/4 G5/4  F5/2 A5/2 D6/4 B5/2 G5/2 F5/4  C6/6 ./2 G5/2 E5/2 C5/4", "lead_wave": "pulse25", "lead_vol": 0.06, "arp": "updown", "arp_vol": 0.022, "bass": "bounce", "bass_vol": 0.1, "kick": "x.......x.x.....", "snare": "....x.......x...", "hat": "..x...x...x...x.", "drum_vol": 0.7}, "boss": {"bpm": 168, "chords": ["Am", "Am", "F", "G", "Am", "Am", "E", "E"], "lead": "A5/2 A5/2 C6/2 A5/2 E6/4 D6/4  C6/2 B5/2 A5/2 G5/2 A5/8  F5/2 A5/2 C6/2 F6/2 E6/4 C6/4  D6/2 B5/2 G5/2 B5/2 D6/8  A5/2 E6/2 A6/4 G6/2 E6/2 C6/4  B5/2 C6/2 D6/2 E6/2 A5/8  G#5/2 B5/2 E6/4 D6/2 B5/2 G#5/4  E5/4 G#5/4 B5/4 E6/4", "lead_wave": "square", "lead_vol": 0.05, "arp": "up", "arp_vol": 0.018, "bass": "drive", "bass_vol": 0.11, "kick": "x...x...x...x...", "snare": "....x.......x..x", "hat": "..x...x...x...x.", "drum_vol": 0.8}, "ending": {"bpm": 92, "chords": ["C", "G", "Am", "Em", "F", "C", "F", "G"], "lead": "E5/4 G5/4 C6/8  B5/4 D6/4 G5/8  C6/4 E6/4 A5/8  B5/4 G5/4 E5/8  A5/4 C6/4 F6/8  E6/4 D6/4 C6/8  A5/4 C6/4 D6/4 F6/4  E6/8 D6/8", "lead_wave": "triangle", "lead_vol": 0.11, "arp": "slow", "arp_vol": 0.02, "bass": "half", "bass_vol": 0.08, "kick": "x...............", "snare": "", "hat": "........x.......", "drum_vol": 0.35}};
+const BGM = { name: null, mul: 1, song: null, step: 0, t: 0, timer: null, out: null, level: 1, noise: null, pulse: {} };
+const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function bgmOn() { return store.get('bgm', true); }
+function hzOf(semi, oct) { return 440 * Math.pow(2, ((oct + 1) * 12 + semi - 69) / 12); }
+function noteHz(n) {
+  const m = /^([A-G])(#|b)?(\d)$/.exec(n); if (!m) return null;
+  return hzOf(SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), +m[3]);
+}
+function chordTones(c) {
+  const m = /^([A-G])(#|b)?(m?)$/.exec(c), r = SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  return [r, r + (m[3] ? 3 : 4), r + 7];
+}
+function compileSong(name) {
+  const S = SONGS[name], steps = S.chords.length * 16, ev = Array.from({ length: steps }, () => []);
+  let pos = 0;
+  for (const tok of S.lead.trim().split(/\s+/)) {
+    const [n, len] = tok.split('/'); const hz = n === '.' ? null : noteHz(n);
+    if (hz) ev[pos].push({ wave: S.lead_wave, hz, len: +len, vol: S.lead_vol });
+    pos += +len;
+  }
+  S.chords.forEach((c, bar) => {
+    const [r, t, f] = chordTones(c), b0 = bar * 16;
+    const arp = { up: [[r, 4], [t, 4], [f, 4], [r, 5]], updown: [[r, 4], [t, 4], [f, 4], [r, 5], [f, 4], [t, 4]], slow: [[r, 4], [t, 4], [f, 4], [t, 4]] }[S.arp];
+    const al = S.arp === 'slow' ? 2 : 1;
+    for (let i = 0, k = 0; i < 16; i += al, k++) { const [sm, o] = arp[k % arp.length]; ev[b0 + i].push({ wave: 'square', hz: hzOf(sm, o), len: al, vol: S.arp_vol }); }
+    const bass = { half: [[r, 3, 8], [f, 2, 8]], bounce: [[r, 3, 2], [r, 3, 2], [f, 2, 2], [r, 3, 2], [r, 3, 2], [r, 3, 2], [f, 2, 2], [t, 2, 2]],
+                   drive: [[r, 2, 2], [r, 3, 2], [r, 2, 2], [r, 3, 2], [r, 2, 2], [r, 3, 2], [r, 2, 2], [r, 3, 2]] }[S.bass];
+    let bp = 0; for (const [sm, o, len] of bass) { ev[b0 + bp].push({ wave: 'triangle', hz: hzOf(sm, o), len, vol: S.bass_vol }); bp += len; }
+    for (let i = 0; i < 16; i++) for (const d of ['kick', 'snare', 'hat']) if ((S[d] || '')[i] === 'x') ev[b0 + i].push({ drum: d, vol: S.drum_vol });
+  });
+  return { bpm: S.bpm, steps, ev };
+}
+function pulseWave(duty) {
+  if (BGM.pulse[duty]) return BGM.pulse[duty];
+  const n = 32, re = new Float32Array(n), im = new Float32Array(n);
+  for (let k = 1; k < n; k++) im[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * duty);
+  return (BGM.pulse[duty] = actx.createPeriodicWave(re, im));
+}
+function bgmVoice(e, t, dur) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  if (e.wave === 'pulse25') o.setPeriodicWave(pulseWave(0.25)); else o.type = e.wave === 'pulse50' ? 'square' : e.wave;
+  o.frequency.value = e.hz;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(e.vol, t + 0.006);
+  g.gain.setValueAtTime(e.vol, t + Math.max(0.01, dur - 0.04)); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(BGM.out); o.start(t); o.stop(t + dur + 0.02);
+}
+function bgmDrum(kind, t, vol) {
+  if (kind === 'kick') {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.11);
+    g.gain.setValueAtTime(0.35 * vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    o.connect(g).connect(BGM.out); o.start(t); o.stop(t + 0.15); return;
+  }
+  if (!BGM.noise) { const b = actx.createBuffer(1, actx.sampleRate, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; BGM.noise = b; }
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain(), len = kind === 'snare' ? 0.12 : 0.035;
+  src.buffer = BGM.noise; f.type = 'highpass'; f.frequency.value = kind === 'snare' ? 1500 : 7000;
+  g.gain.setValueAtTime((kind === 'snare' ? 0.14 : 0.05) * vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+  src.connect(f).connect(g).connect(BGM.out); src.start(t, Math.random() * 0.5); src.stop(t + len + 0.01);
+}
+function bgmTick() {
+  if (!actx || !BGM.song) return;
+  const sd = 60 / (BGM.song.bpm * BGM.mul) / 4;
+  if (BGM.t < actx.currentTime) BGM.t = actx.currentTime + 0.02;        // 遅れたら追いつく(タブを戻したときなど)
+  while (BGM.t < actx.currentTime + 0.15) {
+    for (const e of BGM.song.ev[BGM.step]) e.drum ? bgmDrum(e.drum, BGM.t, e.vol) : bgmVoice(e, BGM.t, e.len * sd * 0.92);
+    BGM.t += sd; BGM.step = (BGM.step + 1) % BGM.song.steps;
+  }
+}
+function bgmLevel(x) {
+  BGM.level = x;
+  if (BGM.out) BGM.out.gain.setTargetAtTime(bgmOn() ? 0.9 * x : 0, actx.currentTime, 0.08);
+}
+function bgmPlay(name, mul = 1) {
+  if (!actx) return;
+  if (!BGM.out) { BGM.out = actx.createGain(); BGM.out.connect(actx.destination); bgmLevel(BGM.level); }
+  if (BGM.name === name && Math.abs(BGM.mul - mul) < 0.001 && BGM.timer) return;
+  const same = BGM.name === name;
+  BGM.name = name; BGM.mul = mul; BGM.song = compileSong(name);
+  if (!same) { BGM.step = 0; BGM.t = actx.currentTime + 0.06; }
+  if (!BGM.timer) BGM.timer = setInterval(bgmTick, 25);
+}
+function bgmStop() { BGM.name = null; BGM.song = null; if (BGM.timer) { clearInterval(BGM.timer); BGM.timer = null; } }
+function nearBoss() {
+  const b = G.enemies && G.enemies.find(e => e.boss && !e.dead);
+  return !!b && Math.hypot(G.player.x - b.start.x, G.player.z - b.start.z) < b.arena + 10;
+}
+// 場面に合わせて曲を変える(毎フレーム呼んでも、同じ曲なら何もしない)
+function bgmScene() {
+  const m = G.mode;
+  bgmLevel(m === 'pause' ? 0.35 : 1);
+  if (m === 'pause') return;
+  if (m === 'ending') return bgmPlay('ending');
+  if (m === 'play' || m === 'special') return bgmPlay(nearBoss() ? 'boss' : 'stage', nearBoss() ? 1 : 1 + G.stage * 0.04);
+  if (m === 'result' && G.lastKind === 'over') return bgmStop();
+  bgmPlay('title');
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (BGM.timer) { clearInterval(BGM.timer); BGM.timer = null; } }
+  else if (BGM.song && !BGM.timer) { BGM.t = actx.currentTime + 0.05; BGM.timer = setInterval(bgmTick, 25); }
+});
 
 // ---------------- 文字入りテクスチャ(ブロックの「課題」など) ----------------
 const texCache = {};
@@ -1444,7 +1549,7 @@ function placeCamera(dt) {
 let last = performance.now();
 function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (G.mode === 'play') update(dt);
+  if (G.mode === 'play') { update(dt); bgmScene(); }
   else if (G.mode === 'special') updateSpecial(dt);
   else if (G.mode === 'ending' && END) updateEnding(dt);
   else if (G.mode === 'result' && G.fx.length) updateFx(dt);
@@ -1457,6 +1562,7 @@ function loop(t) {
 const $ = id => document.getElementById(id);
 function setMode(m) {
   G.mode = m;
+  setTimeout(bgmScene, 0);
   if (m === 'play' && document.activeElement && document.activeElement.blur) document.activeElement.blur();   // スペースでボタンが押されないように
   $('title').classList.toggle('hidden', m !== 'title');
   $('charsel').classList.toggle('hidden', m !== 'charsel');
@@ -1566,7 +1672,10 @@ function helpHTML(dev) {
        <dt>ジャンプ</dt><dd>短く押すと小ジャンプ</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>II</dt><dd>一時停止</dd></dl>`;
 }
 const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍)。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
-function refreshVoiceBtns() { $('vOn').setAttribute('aria-pressed', String(voiceOn())); $('vOff').setAttribute('aria-pressed', String(!voiceOn())); }
+function refreshVoiceBtns() {
+  $('vOn').setAttribute('aria-pressed', String(voiceOn())); $('vOff').setAttribute('aria-pressed', String(!voiceOn()));
+  $('mOn').setAttribute('aria-pressed', String(bgmOn())); $('mOff').setAttribute('aria-pressed', String(!bgmOn()));
+}
 function openPause(title = '一時停止中') {
   refreshVoiceBtns();
   $('pauseTitle').textContent = title;
@@ -1590,6 +1699,8 @@ function retryStage() { endLog('retry'); const keep = G.ammo; buildStage(G.stage
 
 $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
 $('vOff').onclick = () => { store.set('voice', false); refreshVoiceBtns(); };
+$('mOn').onclick = () => { store.set('bgm', true); refreshVoiceBtns(); bgmLevel(BGM.level); };
+$('mOff').onclick = () => { store.set('bgm', false); refreshVoiceBtns(); bgmLevel(BGM.level); };
 
 // 結果
 let resultNext = null;
