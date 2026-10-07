@@ -841,6 +841,7 @@ function buildStage(i) {
   // プレイヤー
   if (G.ammo < st.ai) G.ammo = st.ai;
   G.respawnPt = new THREE.Vector3(0, 0, 0);
+  G.stageScore0 = G.score;            // やり直したときに戻すスコア
   respawn(true);
   if (i === STAGES.length - 1) preloadEndingVoices();
   startLog();
@@ -1697,7 +1698,7 @@ $('toMenu').onclick = () => { endLog('quit'); persist(); openCharsel(); };
 $('openHelpTitle').onclick = () => openPause('あそびかた');
 $('segPC').onclick = () => { G.device = 'pc'; store.set('device', 'pc'); document.body.classList.remove('touch'); openPause($('pauseTitle').textContent); };
 $('segTouch').onclick = () => { G.device = 'touch'; store.set('device', 'touch'); document.body.classList.add('touch'); openPause($('pauseTitle').textContent); };
-function retryStage() { endLog('retry'); const keep = G.ammo; buildStage(G.stage); G.ammo = Math.max(keep, STAGES[G.stage].ai); updateHud(); }
+function retryStage() { endLog('retry'); G.score = G.stageScore0 || 0; /* やり直したらスコアもステージの最初に戻す */ const keep = G.ammo; buildStage(G.stage); G.ammo = Math.max(keep, STAGES[G.stage].ai); updateHud(); }
 
 $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
 $('vOff').onclick = () => { store.set('voice', false); refreshVoiceBtns(); };
@@ -1803,11 +1804,15 @@ async function sendScore(acct) {
       $('rkView').onclick = openRanking;
     } else if (res.error === 'not owner') {
       store.set('acct', null); rkMsg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
-    } else { rkMsg('登録できませんでした:' + res.error, 'bad'); if (b) b.disabled = false; }
+    } else { rkMsg('登録できませんでした:' + errText(res.error), 'bad'); if (b) b.disabled = false; }
   } catch (e) { rkMsg('サーバーにつながりませんでした。少ししてからもう一度', 'bad'); if (b) b.disabled = false; }
 }
 
 // ---------------- ログインとセーブ(どの端末からでも続きから) ----------------
+function errText(e) {
+  return { taken: 'このニックネームは使われています(パスワードがちがう?)', locked: 'パスワードを何回もまちがえたので、10分くらい待ってね',
+           busy: '混み合っています。少し待ってからもう一度ためしてね', 'bad data': '入力がおかしいみたい' }[e] || 'エラー:' + e;
+}
 function lgMsg(t, kind = '') { const m = $('lgMsg'); m.textContent = t; m.className = 'msg ' + kind; }
 function openLogin(forceForm = false) {
   const acct = store.get('acct', null);
@@ -1832,7 +1837,7 @@ async function doLogin() {
   lgMsg('確認中…'); $('lgGo').disabled = true;
   try {
     const res = await gasPost({ action: 'auth', name, pass });
-    if (!res.ok) return lgMsg(res.error === 'taken' ? 'このニックネームは使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
+    if (!res.ok) return lgMsg(errText(res.error), 'bad');
     startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgGo').disabled = false; }
