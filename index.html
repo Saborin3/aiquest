@@ -187,6 +187,7 @@ body.touch .kh { display: none; }
 .rank-box { border-top: 2px solid var(--line); margin-top: 12px; padding-top: 12px; font-size: 14px; }
 .rank-box.flat { border-top: 0; margin-top: 0; padding-top: 0; }
 .rank-box .note { font-size: 13px; opacity: .78; line-height: 1.6; margin: 6px 0; }
+.rank-box .note.warn { opacity: 1; color: var(--vermilion); font-weight: 800; }
 .cs-info { color: var(--paper); font-weight: 800; font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 6px; opacity: .92; }
 .cs-info b { color: var(--yellow); }
 .cs-stage { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; color: var(--yellow); font-weight: 800; }
@@ -270,17 +271,18 @@ body.touch .kh { display: none; }
   <div class="panel">
     <h2>ログイン</h2>
     <div class="rank-box flat">
-      <p class="note">名前とパスワードで、どの端末からでも続きから遊べるよ。はじめての名前は、そのパスワードで登録される。</p>
-      <div class="row hidden" id="lgQuick"><button class="btn primary" id="lgContinue">続ける</button><button class="linky" id="lgOther">別の名前でログイン</button></div>
+      <p class="note">ニックネームとパスワードで、どの端末からでも続きから遊べるよ。はじめてのニックネームは、そのパスワードで登録される。</p>
+      <p class="note warn">⚠ 本名や学籍番号は入れないでね。ニックネームはランキングでみんなに表示されるよ。</p>
+      <div class="row hidden" id="lgQuick"><button class="btn primary" id="lgContinue">続ける</button><button class="linky" id="lgOther">別のニックネームでログイン</button></div>
       <div id="lgForm">
-        <div class="fields"><input id="lgName" placeholder="名前(英数字12文字まで)" maxlength="12" autocomplete="username" inputmode="latin" autocapitalize="off" spellcheck="false">
+        <div class="fields"><input id="lgName" placeholder="ニックネーム(英数字12文字まで)" maxlength="12" autocomplete="username" inputmode="latin" autocapitalize="off" spellcheck="false">
           <input id="lgPass" type="password" placeholder="パスワード(英数字4〜12文字)" maxlength="12" autocomplete="current-password"></div>
         <div class="row"><button class="btn primary" id="lgGo">ログイン<span class="kh"> [Enter]</span></button></div>
       </div>
       <p class="msg" id="lgMsg"></p>
       <div class="row"><button class="btn" id="lgGuest">ゲストで遊ぶ<span class="kh"> [Esc]</span></button><button class="btn" id="lgBack">タイトルへ</button></div>
       <p class="note">ゲストはデータが保存されず、ランキングにも残らないよ。</p>
-      <p class="note">※ ゲームの改善と研究のために、プレイの記録(ステージの時間・ミスの回数・AIを投げた回数など)を集めています。名前以外の個人情報は集めません。</p>
+      <p class="note">※ ゲームの改善と研究のために、プレイの記録(ステージの時間・ミスの回数・AIを投げた回数など)を集めています。ニックネーム以外の個人情報は集めません。</p>
     </div>
   </div>
 </section>
@@ -292,7 +294,7 @@ body.touch .kh { display: none; }
     <div class="cards" id="cards"></div>
     <div class="cs-stage"><button class="btn" id="stPrev" aria-label="前のステージ">◀</button><span id="stName"></span><button class="btn" id="stNext" aria-label="次のステージ">▶</button></div>
     <div class="sheet-actions">
-      <button class="btn ghost" id="csLogout">名前を変える<span class="kh"> [N]</span></button>
+      <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
       <button class="btn primary" id="startGame">この人で出勤する</button>
     </div>
   </div>
@@ -1760,15 +1762,15 @@ function rankBox() {
   if (acct) {
     box.innerHTML = `<b>オンラインランキング</b>
       <div class="row" style="margin-top:8px"><button class="btn primary" id="rkSend">${acct.name} として登録する</button>
-      <button class="linky" id="rkOther">別の名前で登録する</button></div><p class="msg" id="rkMsg"></p>`;
+      <button class="linky" id="rkOther">別のニックネームで登録する</button></div><p class="msg" id="rkMsg"></p>`;
     $('rkSend').onclick = () => sendScore(acct);
     $('rkOther').onclick = () => { store.set('acct', null); rankBox(); };
   } else {
     box.innerHTML = `<b>オンラインランキングに登録する</b>
-      <div class="fields"><input id="rkName" placeholder="名前(英数字12文字まで)" maxlength="12" autocomplete="username" inputmode="latin">
+      <div class="fields"><input id="rkName" placeholder="ニックネーム(英数字12文字まで)" maxlength="12" autocomplete="username" inputmode="latin">
       <input id="rkPass" type="password" placeholder="パスワード(英数字4〜12文字)" maxlength="12" autocomplete="current-password"></div>
       <div class="row"><button class="btn primary" id="rkLogin">登録する</button></div>
-      <p class="msg" id="rkMsg">はじめての名前は、そのパスワードで新しく作られます</p>`;
+      <p class="msg" id="rkMsg">はじめてのニックネームは、そのパスワードで新しく作られます</p>`;
     const go = () => login($('rkName').value.trim(), $('rkPass').value);
     $('rkLogin').onclick = go;
     $('rkPass').addEventListener('enterkey', go); $('rkName').addEventListener('enterkey', () => $('rkPass').focus());
@@ -1776,12 +1778,12 @@ function rankBox() {
 }
 function rkMsg(text, kind = '') { const m = $('rkMsg'); if (m) { m.textContent = text; m.className = 'msg ' + kind; } }
 async function login(name, pass) {
-  if (!NAME_RE.test(name)) return rkMsg('名前は英数字と - _ で12文字まで', 'bad');
+  if (!NAME_RE.test(name)) return rkMsg('ニックネームは英数字と - _ で12文字まで', 'bad');
   if (!PASS_RE.test(pass)) return rkMsg('パスワードは英数字4〜12文字', 'bad');
   rkMsg('確認中…');
   try {
     const res = await gasPost({ action: 'auth', name, pass });
-    if (!res.ok) return rkMsg(res.error === 'taken' ? 'この名前は使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
+    if (!res.ok) return rkMsg(res.error === 'taken' ? 'このニックネームは使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
     const acct = { name: res.name, token: res.token };
     store.set('acct', acct);
     await sendScore(acct);
@@ -1825,12 +1827,12 @@ function startWith(acct, save, msg) {
 }
 async function doLogin() {
   const name = $('lgName').value.trim(), pass = $('lgPass').value;
-  if (!NAME_RE.test(name)) return lgMsg('名前は英数字と - _ で12文字まで', 'bad');
+  if (!NAME_RE.test(name)) return lgMsg('ニックネームは英数字と - _ で12文字まで', 'bad');
   if (!PASS_RE.test(pass)) return lgMsg('パスワードは英数字4〜12文字', 'bad');
   lgMsg('確認中…'); $('lgGo').disabled = true;
   try {
     const res = await gasPost({ action: 'auth', name, pass });
-    if (!res.ok) return lgMsg(res.error === 'taken' ? 'この名前は使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
+    if (!res.ok) return lgMsg(res.error === 'taken' ? 'このニックネームは使われています(パスワードがちがう?)' : 'エラー:' + res.error, 'bad');
     startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgGo').disabled = false; }
