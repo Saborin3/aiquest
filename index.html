@@ -805,10 +805,16 @@ function physics(dt) {
     // 角に少しだけ乗っている → 外へずり落ちる
     for (const b of G.solids) {
       if (insideBody(b, p.x, p.y, p.z) || (overlapXZ(b, p.x, p.z, HALF_W) && p.y < b.maxY && p.y > b.maxY - 0.6 && !(p.x > b.minX && p.x < b.maxX && p.z > b.minZ && p.z < b.maxZ))) {
-        const pushes = [[b.minX - HALF_W - p.x, 0], [b.maxX + HALF_W - p.x, 0], [0, b.minZ - HALF_W - p.z], [0, b.maxZ + HALF_W - p.z]];
-        pushes.sort((a, c) => Math.hypot(...a) - Math.hypot(...c));
-        const [px, pz] = pushes[0], step = Math.min(1, 4 * dt / Math.max(0.001, Math.hypot(px, pz)));
-        if (p.y < b.maxY - 0.05) { p.x += px; p.z += pz; } else { p.x += px * step; p.z += pz * step; }
+        // 外へ出す候補(前後左右と、めり込んでいるときは机の上)を近い順に試して、ほかの机にもめり込まない場所を選ぶ
+        // (机と机のすき間で行ったり来たりして、抜けられなくならないように)
+        const inside = p.y < b.maxY - 0.05;
+        const cands = [[b.minX - HALF_W - 0.01 - p.x, 0, 0], [b.maxX + HALF_W + 0.01 - p.x, 0, 0],
+                       [0, 0, b.minZ - HALF_W - 0.01 - p.z], [0, 0, b.maxZ + HALF_W + 0.01 - p.z]];
+        if (inside) cands.push([0, b.maxY - p.y, 0]);
+        cands.sort((a, c) => Math.hypot(...a) - Math.hypot(...c));
+        const free = cands.find(c => !blockedAt(p.x + c[0], p.y + c[1], p.z + c[2]));
+        if (inside) { const [px, py, pz] = free || cands[0]; p.x += px; p.y += py; p.z += pz; if (py) G.vy = 0; }
+        else if (free) { const [px, , pz] = free, step = Math.min(1, 4 * dt / Math.max(0.001, Math.hypot(px, pz))); p.x += px * step; p.z += pz * step; }
       }
     }
   } else {
