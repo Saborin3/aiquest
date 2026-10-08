@@ -948,6 +948,7 @@ function buildStage(i) {
   G.ammo = stageAmmo(st, G.ammo);
   G.respawnPt = new THREE.Vector3(0, 0, 0);
   G.stageScore0 = G.score;            // やり直したときに戻すスコア
+  G.stageAmmo0 = G.ammo; G.stageSpecial0 = G.special; G.stageLives0 = G.lives;   // やり直したときに戻す持ち物
   respawn(true);
   if (i === STAGES.length - 1) preloadEndingVoices();
   spawnCards(i);
@@ -1128,7 +1129,7 @@ function updateEnemies(dt) {
     const half = e.size / 2;
     if (Math.abs(p.x - m.position.x) < half + 0.45 && Math.abs(p.z - m.position.z) < half + 0.45 &&
         p.y < m.position.y + half && p.y + HEIGHT > m.position.y - half) {
-      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
+      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { if (!e.boss) onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
       else hurt(e.label.replace('\n', ''));
     }
   }
@@ -1515,7 +1516,7 @@ function hurt(cause = '') {
   if (G.log) { const p = G.player; G.log.deaths += 1; G.log.causes.push(cause); G.log.spots.push([p.x, p.y, p.z].map(v => Math.round(v))); }
   if (G.st) G.st.deaths += 1; G.runDeaths = (G.runDeaths || 0) + 1;
   G.lives -= 1; updateHud();
-  if (G.lives <= 0) { sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); persist(); showResult('over'); return; }
+  if (G.lives <= 0) { if (G.score >= 30000) award('ace'); sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); persist(); showResult('over'); return; }
   sfx.hurt(); say(G.char.name, 'hurt'); toast('うわっ!', true); respawn(false);
 }
 function checkGoal() {
@@ -1571,6 +1572,7 @@ window.addEventListener('keydown', e => {
     if (k === 'Enter' && !$('lgQuick').classList.contains('hidden')) { e.preventDefault(); continueLogin(); }
     if (k === 'Enter' && $('lgQuick').classList.contains('hidden')) { e.preventDefault(); doLogin(); }
   } else if (G.mode === 'gacha') {
+    if (k === 'Escape' && gachaFrom === 'menu') gachaNext();
     if (k === ' ') { e.preventDefault(); spinGacha(); }
     if (k === 'Enter') { e.preventDefault(); gachaNext(); }
   } else if (G.mode === 'intro') {
@@ -1864,7 +1866,13 @@ $('toMenu').onclick = () => { endLog('quit'); persist(); openCharsel(); };
 $('openHelpTitle').onclick = () => openPause('あそびかた');
 $('segPC').onclick = () => { G.device = 'pc'; store.set('device', 'pc'); document.body.classList.remove('touch'); openPause($('pauseTitle').textContent); };
 $('segTouch').onclick = () => { G.device = 'touch'; store.set('device', 'touch'); document.body.classList.add('touch'); openPause($('pauseTitle').textContent); };
-function retryStage() { endLog('retry'); G.score = G.stageScore0 || 0; /* やり直したらスコアもステージの最初に戻す */ const keep = G.ammo; buildStage(G.stage); G.ammo = Math.max(keep, STAGES[G.stage].ai); updateHud(); }
+function retryStage() {
+  // やり直したら、スコア・AI・課金パワーはステージの最初に戻す(ブロックを叩き直して増やせないように)。ライフは増えない
+  endLog('retry'); G.score = G.stageScore0 || 0;
+  const lives = Math.min(G.lives, G.stageLives0 || G.lives);
+  G.ammo = G.stageAmmo0 ?? G.ammo; G.special = G.stageSpecial0 ?? G.special;
+  buildStage(G.stage); G.lives = lives; updateHud();
+}
 
 $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
 $('vOff').onclick = () => { store.set('voice', false); refreshVoiceBtns(); };
@@ -1970,6 +1978,7 @@ async function sendScore(acct) {
   if (G.submitted) return;
   rkMsg('送信中…');
   const b = $('rkSend') || $('rkLogin'); if (b) b.disabled = true;
+  try { await saveBusy; } catch (e) {}      // 称号などのセーブを先にサーバーに届けてから
   try {
     const res = await gasPost({ name: acct.name, token: acct.token, score: G.score, stage: G.stage + 1,
                                 character: G.char.name + '(Web)', clear: G.lastKind === 'all' || G.lastKind === 'daily', date: nowStamp(),
@@ -2004,6 +2013,7 @@ function openLogin(forceForm = false) {
 }
 function startWith(acct, save, msg, created = false) {
   G.acct = acct; G.save = fixSave(save);
+  G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; G.score = 0; G.playMode = 'normal';
   G.selMode = store.get('selMode', 'normal');
   // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
   if (created || !store.get('introSeen', false)) {
@@ -2050,10 +2060,12 @@ $('lgName').addEventListener('enterkey', () => $('lgPass').focus());
 
 // 今の状態をセーブに入れて、ログインしていればサーバーに保存する
 let saveBusy = Promise.resolve();
-function persist(menu = false) {
+function persist(from = 'play') {
   const sv = G.save;
-  // menu:ロッカー・ガシャ画面から(プレイの点数は入れない)。残業・お題は AI と課金パワーを持ち帰らない
-  if (menu) { sv.dol = G.doru; sv.ammo = G.ammo; sv.special = G.special; }
+  // 'meta':称号・着せ替えだけ変えた(数字はさわらない) / 'menu':ロッカーのガシャ / 'play':プレイ中・プレイ後
+  // 残業・お題は AI と課金パワーを持ち帰らない
+  if (from === 'meta') { /* そのまま送る */ }
+  else if (from === 'menu') { sv.dol = G.doru; sv.ammo = G.ammo; sv.special = G.special; }
   else {
     sv.dol = G.doru;
     if (G.playMode === 'overtime') sv.bestOt = Math.max(sv.bestOt || 0, G.score);
@@ -2155,7 +2167,7 @@ function spinGacha() {
     G.ammo += prize.ai; G.lives = Math.min(9, G.lives + prize.life); G.special += prize.special;
     $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}`;
     (prize.special ? sfx.power : prize.life ? sfx.power : sfx.done)();
-    gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu');
+    gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu' ? 'menu' : 'play');
   }, 950);
 }
 function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return openLocker(); buildStage(G.stage + 1); setMode('play'); }
@@ -2224,8 +2236,12 @@ $('csRank').onclick = () => openRanking();
 let rankFrom = 'title', rkTab = 'normal', rkStage = 1, rkSeq = 0;
 const rkCache = {};
 function openRanking() {
-  if (G.mode !== 'ranking') rankFrom = G.mode;
-  setMode('ranking'); setRankTab(G.mode === 'ranking' ? rkTab : (G.playMode === 'overtime' && rankFrom === 'result' ? 'overtime' : G.playMode === 'daily' && rankFrom === 'result' ? 'daily' : rkTab));
+  const from = G.mode;
+  if (from !== 'ranking') rankFrom = from;
+  let tab = rkTab;
+  if (from === 'result' && (G.playMode === 'overtime' || G.playMode === 'daily')) tab = G.playMode;
+  else if (from === 'result') tab = 'normal';
+  setMode('ranking'); setRankTab(tab);
 }
 function setRankTab(t, stage) {
   rkTab = t; if (stage) rkStage = stage;
@@ -2317,7 +2333,7 @@ const DAILY_RULES = [
   { id: 'rush', name: '定時ダッシュの日', desc: '定時ボーナスが2倍', timeMul: 2 },
 ];
 function defaultSave() {
-  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0,
+  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0, dailyDay: 0,
            titles: [], items: [], cards: [], title: '', equip: {}, times: [0, 0, 0, 0, 0] };
 }
 function fixSave(sv) {
@@ -2408,8 +2424,8 @@ function allCleared() {
 }
 function finishDaily() {
   award('daily');
-  const key = 'dailyDol:' + (G.acct ? G.acct.name : 'guest') + ':' + G.daily.day;
-  if (!store.get(key, false)) { store.set(key, true); G.doru += BONUS.daily; G.lastBonus.dol = BONUS.daily; }
+  const day = Number(G.daily.day);
+  if (G.save.dailyDay !== day) { G.save.dailyDay = day; G.doru += BONUS.daily; G.lastBonus.dol = BONUS.daily; }
   if (G.score >= 30000) award('ace');
   persist(); showResult('daily');
 }
@@ -2506,7 +2522,7 @@ function renderLocker() {
       return `<div class="lk-item ${have ? '' : 'locked'}"><span><b>${have ? escapeHtml(t.name) : '???'}</b><small>${escapeHtml(t.desc)}</small></span>` +
         (have ? `<button class="btn ${on ? 'primary' : ''}" data-title="${t.id}">${on ? 'つけている' : 'つける'}</button>` : '<span class="lk-lock">未獲得</span>') + '</div>';
     }).join('') + `<div class="lk-item"><span><b>称号をはずす</b><small>ランキングに称号を出さない</small></span><button class="btn" data-title="">はずす</button></div>`;
-    body.querySelectorAll('[data-title]').forEach(b => b.onclick = () => { sv.title = b.dataset.title; persist(true); renderLocker(); });
+    body.querySelectorAll('[data-title]').forEach(b => b.onclick = () => { sv.title = b.dataset.title; persist('meta'); renderLocker(); });
   } else {
     body.innerHTML = Object.keys(SLOT_NAMES).map(slot => {
       const list = ITEMS.filter(x => x.slot === slot);
@@ -2516,7 +2532,7 @@ function renderLocker() {
           (have ? `<button class="btn ${on ? 'primary' : ''}" data-slot="${slot}" data-item="${on ? '' : x.id}">${on ? 'はずす' : 'つける'}</button>` : '<span class="lk-lock">未入手</span>') + '</div>';
       }).join('');
     }).join('');
-    body.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { const s = b.dataset.slot; if (b.dataset.item) sv.equip[s] = b.dataset.item; else delete sv.equip[s]; persist(true); renderLocker(); });
+    body.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { const s = b.dataset.slot; if (b.dataset.item) sv.equip[s] = b.dataset.item; else delete sv.equip[s]; persist('meta'); renderLocker(); });
   }
 }
 $('lkTabT').onclick = () => { lkTab = 'titles'; renderLocker(); };
@@ -2551,6 +2567,7 @@ refreshTitle(); resize(); setMode('title');
 function backdrop() {
   G.hero = makeHero(CHARS[0].look); scene.add(G.hero); G.player = G.hero.position;
   G.char = CHARS[0]; buildStage(0); $('banner').classList.add('hidden'); G.camYaw = 0.5;
+  G.log = null;   // 飾りのステージなので、プレイログには入れない
 }
 const fontsReady = document.fonts ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
 fontsReady.then(() => { backdrop(); requestAnimationFrame(loop); });
