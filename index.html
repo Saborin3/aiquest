@@ -148,16 +148,16 @@ body.touch .kh { display: none; }
   background: rgba(29, 36, 51, .88); padding: 10px 28px; border-radius: 6px; white-space: pre-line; }
 
 /* タッチ操作 */
-#touch { position: fixed; inset: 0; z-index: 12; pointer-events: none; }
+#touch { position: fixed; inset: 0; z-index: 12; pointer-events: none; --s: 1; }
 #stick { position: absolute; left: max(18px, env(safe-area-inset-left, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px));
-  width: 112px; height: 112px; border-radius: 50%; background: rgba(246,245,240,.14); box-shadow: inset 0 0 0 3px rgba(246,245,240,.55);
+  width: calc(112px * var(--s)); height: calc(112px * var(--s)); border-radius: 50%; background: rgba(246,245,240,.14); box-shadow: inset 0 0 0 calc(3px * var(--s)) rgba(246,245,240,.55);
   pointer-events: auto; touch-action: none; }
-#knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
-  background: rgba(246,245,240,.8); box-shadow: 0 3px 0 rgba(0,0,0,.25); }
+#knob { position: absolute; left: 50%; top: 50%; width: calc(46px * var(--s)); height: calc(46px * var(--s)); margin: calc(-23px * var(--s)) 0 0 calc(-23px * var(--s)); border-radius: 50%;
+  background: rgba(246,245,240,.8); box-shadow: 0 calc(3px * var(--s)) 0 rgba(0,0,0,.25); }
 .tbtn { position: absolute; pointer-events: auto; touch-action: none; border: 0; border-radius: 50%; font-weight: 800;
   color: var(--ink); box-shadow: 0 4px 0 rgba(0,0,0,.28); display: grid; place-items: center; line-height: 1.15; }
-#bSP { right: calc(max(18px, env(safe-area-inset-right, 0px)) + 80px); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 68px);
-  width: 48px; height: 48px; background: #ffcd32; color: #5a2d00; font-size: 12px; }
+#bSP { right: calc(max(18px, env(safe-area-inset-right, 0px)) + calc(80px * var(--s))); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + calc(68px * var(--s)));
+  width: calc(48px * var(--s)); height: calc(48px * var(--s)); background: #ffcd32; color: #5a2d00; font-size: calc(12px * var(--s)); }
 #fade { position: fixed; inset: 0; background: #1a1206; opacity: 0; pointer-events: none; z-index: 8; transition: opacity .8s; }
 #skipEnd { position: fixed; z-index: 9; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px));
   border: 0; border-radius: 99px; padding: 10px 18px; font-weight: 800; font-size: 15px; background: rgba(246,245,240,.92); color: var(--ink); }
@@ -169,10 +169,10 @@ body.touch .kh { display: none; }
 @keyframes spIn { from { transform: translateX(-50%) scale(2.4); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #spBanner { animation: none; } #spFlash { transition: none; } }
 .tbtn:active, .tbtn.on { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.28); }
-#bJump { right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); width: 70px; height: 70px; background: var(--yellow); font-size: 13px; }
-#bThrow { right: calc(max(18px, env(safe-area-inset-right, 0px)) + 78px); bottom: max(20px, env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; background: #fff; font-size: 12px; }
-#bThrow b { color: var(--blue); font-family: var(--font-title); font-weight: 400; font-size: 15px; }
-#bLook { right: max(22px, env(safe-area-inset-right, 0px)); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 80px); width: 46px; height: 46px; background: rgba(246,245,240,.85); font-size: 10px; }
+#bJump { right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); width: calc(70px * var(--s)); height: calc(70px * var(--s)); background: var(--yellow); font-size: calc(13px * var(--s)); }
+#bThrow { right: calc(max(18px, env(safe-area-inset-right, 0px)) + calc(78px * var(--s))); bottom: max(20px, env(safe-area-inset-bottom, 0px)); width: calc(58px * var(--s)); height: calc(58px * var(--s)); background: #fff; font-size: calc(12px * var(--s)); }
+#bThrow b { color: var(--blue); font-family: var(--font-title); font-weight: 400; font-size: calc(15px * var(--s)); }
+#bLook { right: max(22px, env(safe-area-inset-right, 0px)); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + calc(80px * var(--s))); width: calc(46px * var(--s)); height: calc(46px * var(--s)); background: rgba(246,245,240,.85); font-size: calc(10px * var(--s)); }
 .tbtn { opacity: .82; } .tbtn:active, .tbtn.on { opacity: 1; }
 
 /* ヘルプ・ポーズ */
@@ -270,7 +270,7 @@ body.touch .kh { display: none; }
     <p class="tc-lead">課題や締切を、相棒のAIで片付けて、今日こそ定時に退勤しよう。</p>
     <div class="tc-rows">
       <button class="punch" id="goPC">PCで出勤する<small>キーボードとマウスで遊ぶ</small><span class="stamp">出勤</span></button>
-      <button class="punch" id="goTouch">スマホで出勤する<small>画面のスティックとボタンで遊ぶ</small><span class="stamp">出勤</span></button>
+      <button class="punch" id="goTouch">スマホ・タブレットで出勤する<small>画面のスティックとボタンで遊ぶ</small><span class="stamp">出勤</span></button>
     </div>
     <div class="tc-foot"><span id="bestLine">自己ベスト:まだ記録なし</span><span><button id="openRankTitle">ランキング</button><button id="openHelpTitle">あそびかた</button></span></div>
   </div>
@@ -359,7 +359,7 @@ body.touch .kh { display: none; }
     <h2 id="pauseTitle">一時停止中</h2>
     <div id="helpBody"></div>
     <p style="margin-top:8px">操作方法
-      <span class="seg" role="group" aria-label="操作方法"><button id="segPC">PC</button><button id="segTouch">スマホ</button></span>
+      <span class="seg" role="group" aria-label="操作方法"><button id="segPC">PC</button><button id="segTouch">タッチ</button></span>
       &nbsp; 声 <span class="seg" role="group" aria-label="キャラの声"><button id="vOn">ON</button><button id="vOff">OFF</button></span>
       &nbsp; BGM <span class="seg" role="group" aria-label="BGM"><button id="mOn">ON</button><button id="mOff">OFF</button></span>
     </p>
@@ -410,7 +410,7 @@ body.touch .kh { display: none; }
 
 <!-- 縦向きのとき -->
 <section id="rotate" class="screen hidden" aria-label="横向きにしてね">
-  <div><div class="phone"></div>スマホを横向きにすると<br>遊びやすいよ
+  <div><div class="phone"></div>画面を横向きにすると<br>遊びやすいよ
     <div style="margin-top:16px"><button class="btn" id="rotateOk">このまま遊ぶ</button></div></div>
 </section>
 
@@ -514,6 +514,7 @@ const CHARS = [
 ];
 
 // ---------------- 調整用の数字 ----------------
+const DASH_MAX = 1.5, DASH_TIME = 0.6, DASH_JUMP = 1.12;   // ダッシュ:最高速の倍率 / 最高速になるまでの秒 / ダッシュ中のジャンプの高さ
 const GRAVITY = 30, BASE_SPEED = 8, BASE_JUMP = 13, TURN = 100, HEIGHT = 2.2, HALF_W = 0.35, STEP_UP = 0.25;
 const SHOT_SPEED = 14, SHOT_LIFE = 1.6, SEARCH = 15, RATE_COUNT = 5, RATE_WINDOW = 4, RATE_COOLDOWN = 3, COFFEE_TIME = 10;
 
@@ -775,7 +776,7 @@ function makeHero(look) {
 function poseHero(h, moving, grounded, dt) {
   const u = h.userData; let tg;
   if (!grounded) tg = { legL: -0.5, legR: 0.35, armL: 0.35, armR: -0.5 };
-  else if (moving) { u.t += dt * 12; const s = Math.sin(u.t) * 0.7; tg = { legL: s, legR: -s, armL: -s * 0.5, armR: s }; }
+  else if (moving) { u.t += dt * 12 * runMul(); const s = Math.sin(u.t) * 0.7; tg = { legL: s, legR: -s, armL: -s * 0.5, armR: s }; }
   else tg = { legL: 0, legR: 0, armL: 0, armR: 0 };
   if (u.throwT > 0) { u.throwT -= dt; tg.armR = -2.6; }
   if (u.reachT > 0) { u.reachT -= dt; tg.armR = -1.4; }
@@ -817,7 +818,7 @@ function addSolid(c, s, mat, extra = {}) {
 }
 function edgeLines(c, s) {
   const top = c[1] + s[1] / 2, w = s[0], d = s[2];
-  for (const [width, col, hh] of [[0.7, COL.edgeDark, 0.02], [0.3, COL.edge, 0.04]]) {
+  for (const [width, col, hh] of [[0.45, COL.edgeDark, 0.02], [0.22, COL.edge, 0.04]]) {
     const o = width / 2, m = lam(col);
     for (const [px, pz, sx, sz] of [[c[0], c[2] - d / 2 + o, w, width], [c[0], c[2] + d / 2 - o, w, width],
                                     [c[0] - w / 2 + o, c[2], width, d], [c[0] + w / 2 - o, c[2], width, d]]) {
@@ -825,13 +826,17 @@ function edgeLines(c, s) {
     }
   }
 }
+const FLOOR_T = 0.2;   // 床の厚み
+function shade(hex, k) { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); }
 function buildStage(i) {
   clearStage();
   const st = STAGES[i]; G.stage = i;
   scene.background = new THREE.Color(st.sky);
-  for (const [c, s] of st.floors) {
+  for (const [c0, s0] of st.floors) {
+    const c = [c0[0], c0[1] + s0[1] / 2 - FLOOR_T / 2, c0[2]], s = [s0[0], FLOOR_T, s0[2]];   // 上の面の高さはそのまま、厚みだけうすく
     const t = gridTex(st.floor, 'rgba(0,0,0,.18)'); t.repeat.set(s[0], s[2]);
-    const mats = [lam(st.floor), lam(st.floor), new THREE.MeshLambertMaterial({ map: t }), lam(st.floor), lam(st.floor), lam(st.floor)];
+    const side = lam(shade(st.floor, 0.6));
+    const mats = [side, side, new THREE.MeshLambertMaterial({ map: t }), side, side, side];
     addSolid(c, s, mats); edgeLines(c, s);
   }
   for (const [c, s, col] of st.blocks) addSolid(c, s, lam(col));
@@ -857,6 +862,16 @@ function buildStage(i) {
     const pole = addObj(box(0.12, 2.6, 0.12, lam('#dddddd'))); pole.position.set(c[0] + 3, c[1] + 1.3, c[2]);
     const flag = addObj(box(0.9, 0.6, 0.05, lam('#9aa0a8'))); flag.position.set(c[0] + 3.5, c[1] + 2.3, c[2]);
     G.checkpoints.push({ pos: new THREE.Vector3(...c), flag, done: false });
+  }
+  // ?ブロック・休暇・課金ブロックの影(真下の床に落とす。高いほどうすく)
+  for (const q of G.qblocks) {
+    const x = (q.minX + q.maxX) / 2, z = (q.minZ + q.maxZ) / 2;
+    let top = -Infinity;
+    for (const b of G.solids) if (!b.mover && b !== q && x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ && b.maxY <= q.minY + 0.01 && b.maxY > top) top = b.maxY;
+    if (!isFinite(top)) continue;
+    const h = q.minY - top;
+    const sh = addObj(new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: Math.max(0.22, 0.42 - h * 0.03), depthWrite: false })));
+    sh.rotation.x = -Math.PI / 2; sh.position.set(x, top + 0.06, z);
   }
   // 退勤ドア
   const g = st.goal; G.goal = new THREE.Vector3(g[0], g[1], g[2]);
@@ -908,13 +923,27 @@ function startRun(ch) {
 function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
   G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = 0; G.grounded = false;
-  G.inv = full ? 0 : 2;
+  G.inv = full ? 0 : 2; G.safe = 0; G.run = 0;
 }
 
 // ---------------- 当たり判定(箱どうし) ----------------
 function overlapXZ(b, x, z, hw) { return x + hw > b.minX && x - hw < b.maxX && z + hw > b.minZ && z - hw < b.maxZ; }
 function insideBody(b, x, y, z) { return overlapXZ(b, x, z, HALF_W) && y + 0.01 < b.maxY - 0.001 && y + HEIGHT > b.minY + 0.001 && b.maxY - y > STEP_UP; }
 function blockedAt(x, y, z) { return G.solids.some(b => insideBody(b, x, y, z)); }
+// 足元の影(空中にいるとき、どこに着地するか分かるように)
+let heroShadow = null;
+function updateShadow() {
+  if (!heroShadow) {
+    heroShadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
+    heroShadow.rotation.x = -Math.PI / 2; heroShadow.renderOrder = 1;
+  }
+  if (heroShadow.parent !== scene) scene.add(heroShadow);
+  const p = G.player, top = topUnder(p.x, p.z, p.y + 0.05);
+  if (!isFinite(top) || !G.hero.visible) { heroShadow.visible = false; return; }
+  const h = Math.max(0, p.y - top);
+  heroShadow.visible = true; heroShadow.position.set(p.x, top + 0.05, p.z);
+  heroShadow.scale.setScalar(Math.max(0.45, 1 - h * 0.06)); heroShadow.material.opacity = Math.max(0.12, 0.35 - h * 0.025);
+}
 function topUnder(x, z, fromY) {   // 足元(真ん中)の一番高い床
   let best = -Infinity;
   for (const b of G.solids) if (x > b.minX - 0.05 && x < b.maxX + 0.05 && z > b.minZ - 0.05 && z < b.maxZ + 0.05 && b.maxY <= fromY + 0.01 && b.maxY > best) best = b.maxY;
@@ -958,7 +987,7 @@ function physics(dt) {
     for (const b of G.solids) if (overlapXZ(b, p.x, p.z, HALF_W - 0.1) && b.minY >= p.y + HEIGHT - 0.05 && b.minY <= p.y + HEIGHT + dy) { if (!hit || b.minY < hit.minY) hit = b; }
     if (hit) { p.y = hit.minY - HEIGHT; G.vy = 0; hitBlock(hit); } else p.y += dy;
   }
-  if (p.y < -15) { G.inv = 0; hurt('落下'); }
+  if (p.y < -15) { G.inv = 0; G.safe = 0; hurt('落下'); }
 }
 
 // ---------------- ブロック・アイテム ----------------
@@ -1029,7 +1058,7 @@ function updateEnemies(dt) {
     const half = e.size / 2;
     if (Math.abs(p.x - m.position.x) < half + 0.45 && Math.abs(p.z - m.position.z) < half + 0.45 &&
         p.y < m.position.y + half && p.y + HEIGHT > m.position.y - half) {
-      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.inv = Math.max(G.inv, 0.3); }
+      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
       else hurt(e.label.replace('\n', ''));
     }
   }
@@ -1140,7 +1169,7 @@ function updateSpecial(dt) {
   updateFx(dt);
   if (sp.t >= end + 1.0) {
     sp.marks.forEach(m => scene.remove(m)); sp.strikes.forEach(st => scene.remove(st.m));
-    G.sp = null; G.mode = 'play'; G.inv = Math.max(G.inv, 1);
+    G.sp = null; G.mode = 'play'; G.safe = Math.max(G.safe || 0, 1);
     $('spDark').classList.add('hidden'); $('spBanner').classList.add('hidden');
     updateHud();
   }
@@ -1409,7 +1438,7 @@ function updateFx(dt) { for (const f of G.fx.slice()) if (!f.update(dt)) { scene
 // ---------------- スコア・ダメージ・クリア ----------------
 function addScore(n) { const pts = Math.round(n * G.char.score); G.score += pts; updateHud(); return pts; }
 function hurt(cause = '') {
-  if (G.inv > 0 || G.mode !== 'play') return;
+  if (G.inv > 0 || G.safe > 0 || G.mode !== 'play') return;   // inv:ミスのあと(点滅) / safe:踏んだ直後・必殺技のあと(点滅しない)
   if (G.log) { const p = G.player; G.log.deaths += 1; G.log.causes.push(cause); G.log.spots.push([p.x, p.y, p.z].map(v => Math.round(v))); }
   G.lives -= 1; updateHud();
   if (G.lives <= 0) { sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); persist(); showResult('over'); return; }
@@ -1503,11 +1532,22 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });   // 別の画面に移ったら押しっぱなしを解除
 canvas.addEventListener('mousedown', () => { if (G.mode === 'play' && G.device === 'pc') throwAI(); });
-function jump() { G.vy = BASE_JUMP * G.char.jump; G.grounded = false; sfx.jump(); say(G.char.name, 'jump'); }
+function jump() { G.vy = BASE_JUMP * G.char.jump * (G.run > 0.7 ? DASH_JUMP : 1); G.grounded = false; sfx.jump(); say(G.char.name, 'jump'); }
+// ダッシュ:G.run が 0→1 でだんだん速くなる。空中では速さを保つ(ダッシュジャンプで遠くまで飛べる)
+function runUpdate(dt, forward, instant) {
+  G.run = G.run || 0;
+  if (!G.grounded) return;                                   // 空中では変えない
+  if (forward) G.run = instant ? 1 : Math.min(1, G.run + dt / DASH_TIME);
+  else G.run = Math.max(0, G.run - dt * 4);
+}
+function runMul() { return 1 + (DASH_MAX - 1) * (G.run || 0); }
 function jumpRelease() { if (G.vy > 0) G.vy *= 0.5; }   // 短く押すと小ジャンプ
 
 // ---------------- 入力(スマホ) ----------------
 const stick = { id: null, x: 0, y: 0 };
+// ボタンの大きさ:スマホ(短い辺 約400px)で1倍、iPad(約800px)で1.8倍くらい
+function fitTouch() { const k = Math.min(1.8, Math.max(1, Math.min(innerWidth, innerHeight) / 420)); document.getElementById('touch').style.setProperty('--s', k.toFixed(2)); }
+fitTouch(); addEventListener('resize', fitTouch);
 const stickEl = document.getElementById('stick'), knob = document.getElementById('knob');
 function stickMove(e) {
   const r = stickEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, max = r.width / 2 - 10;
@@ -1549,8 +1589,9 @@ function update(dt) {
       moving = true;
       const fx = Math.sin(G.yaw), fz = Math.cos(G.yaw), rx = -Math.cos(G.yaw), rz = Math.sin(G.yaw);
       let mx = fx * f + rx * r, mz = fz * f + rz * r; const n = Math.hypot(mx, mz); mx /= n; mz /= n;
-      const sp = BASE_SPEED * G.char.speed * dt; movePlayer(mx * sp, mz * sp);
-    }
+      runUpdate(dt, f > 0, keys.Shift);
+      const sp = BASE_SPEED * G.char.speed * runMul() * dt; movePlayer(mx * sp, mz * sp);
+    } else runUpdate(dt, false, false);
     G.camYaw = G.yaw;
   } else {
     // スティックの向き(カメラ基準)に歩いて、その方向を向く
@@ -1558,17 +1599,21 @@ function update(dt) {
     if (mag > 0.15) {
       moving = true;
       const a = G.camYaw + Math.atan2(-stick.x, -stick.y);
-      const sp = BASE_SPEED * G.char.speed * mag * dt; movePlayer(Math.sin(a) * sp, Math.cos(a) * sp);
+      runUpdate(dt, mag > 0.85, false);       // スティックを最後まで倒し続けるとダッシュ
+      const sp = BASE_SPEED * G.char.speed * mag * runMul() * dt; movePlayer(Math.sin(a) * sp, Math.cos(a) * sp);
       let d = a - G.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); G.yaw += d * Math.min(1, dt * 12);
       // 前に進んでいるときだけ、カメラがゆっくり背中側に回り込む(真横に走るときは回らない)
       if (!look) { let c = G.yaw - G.camYaw; c = Math.atan2(Math.sin(c), Math.cos(c)); G.camYaw += c * Math.min(1, dt * 1.6 * Math.max(0, -stick.y)); }
     }
   }
+  if (G.device !== 'pc' && Math.hypot(stick.x, stick.y) <= 0.15) runUpdate(dt, false, false);
   updateMovers(dt);
   physics(dt);
   G.hero.rotation.y = G.yaw;
   poseHero(G.hero, moving, G.grounded, dt);
   if (G.inv > 0) { G.inv -= dt; G.hero.visible = Math.floor(G.inv * 10) % 2 === 0; } else G.hero.visible = true;
+  if (G.safe > 0) G.safe -= dt;
+  updateShadow();
   updateEnemies(dt); updateShots(dt); updateItems(dt); updateFx(dt); updateBossShots(dt); updateDroppers(dt); updateCheckpoints();
   for (const b of G.qblocks) if (b.kind === 'kakin' && !b.used) b.mesh.rotation.y += dt * 1.5;
   if (G.mode === 'play') checkGoal();
@@ -1704,9 +1749,9 @@ $('startGame').onclick = () => startRun(CHARS[picked]);
 function helpHTML(dev) {
   return dev === 'pc'
     ? `<dl class="keys"><dt>W A S D</dt><dd>移動(A・Dは横歩き)</dd><dt>← →</dt><dd>向きを変える</dd><dt>↑ ↓</dt><dd>視点を上下</dd>
-       <dt>スペース</dt><dd>ジャンプ(短く押すと小ジャンプ)</dd><dt>F / クリック</dt><dd>AIを投げる</dd><dt>E</dt><dd>必殺技「課金パワー」</dd><dt>H / Esc</dt><dd>一時停止・あそびかた</dd><dt>R</dt><dd>この面をやり直す</dd></dl>`
+       <dt>Shift</dt><dd>ダッシュ(Wで走り続けても加速)</dd><dt>スペース</dt><dd>ジャンプ(短く押すと小ジャンプ・ダッシュ中は遠くまで)</dd><dt>F / クリック</dt><dd>AIを投げる</dd><dt>E</dt><dd>必殺技「課金パワー」</dd><dt>H / Esc</dt><dd>一時停止・あそびかた</dd><dt>R</dt><dd>この面をやり直す</dd></dl>`
     : `<dl class="keys"><dt>左のスティック</dt><dd>移動(倒した方向に歩く)</dd><dt>右側をなぞる</dt><dd>視点を回す</dd>
-       <dt>ジャンプ</dt><dd>短く押すと小ジャンプ</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>II</dt><dd>一時停止</dd></dl>`;
+       <dt>ダッシュ</dt><dd>スティックを最後まで倒し続けると加速</dd><dt>ジャンプ</dt><dd>短く押すと小ジャンプ・ダッシュ中は遠くまで</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>II</dt><dd>一時停止</dd></dl>`;
 }
 const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍)。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
 function refreshVoiceBtns() {
@@ -2000,15 +2045,13 @@ $('gcNext').onclick = gachaNext;
 // ---------------- ストーリー・あそびかた(PC版の「あそびかた」と同じ内容) ----------------
 function introPages() {
   const ctl = G.device === 'touch'
-    ? '<ul><li>左のスティック … 移動(倒した方向に歩く)</li><li>右側をなぞる … 視点を回す</li><li>ジャンプ … 短く押すと小ジャンプ</li>' +
+    ? '<ul><li>左のスティック … 移動(倒した方向に歩く)</li><li>右側をなぞる … 視点を回す</li><li>スティックを最後まで倒し続ける … ダッシュ</li><li>ジャンプ … 短く押すと小ジャンプ。ダッシュ中は高く遠くまで</li>' +
       '<li>AI 投げる … 近くの敵を自動で追いかける</li><li>課金 … 必殺技(課金ブロックを叩くと出る)</li><li>視点もどす … キャラのうしろに視点を戻す</li><li>II … 一時停止</li></ul>'
-    : '<ul><li>W A S D … 移動(A・Dは横歩き)</li><li>← → … 向きを変える   ↑ ↓ … 視点を上下</li><li>スペース … ジャンプ(短く押すと小ジャンプ)</li>' +
+    : '<ul><li>W A S D … 移動(A・Dは横歩き)</li><li>← → … 向きを変える   ↑ ↓ … 視点を上下</li><li>Shift … ダッシュ(Wで走り続けても加速)</li><li>スペース … ジャンプ(短く押すと小ジャンプ。ダッシュ中は高く遠くまで)</li>' +
       '<li>F / クリック … AIを投げる</li><li>E … 必殺技「課金パワー」</li><li>H / Esc … 一時停止・あそびかた</li><li>R … この面をやり直す</li></ul>';
   const screens = G.device === 'touch'
-    ? '<ul><li>【ログイン】ニックネームとパスワード(本名はNG)。はじめてのニックネームはそのまま登録</li>' +
-      '<li>【キャラ選択】キャラをタップ、◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
-    : '<ul><li>【ログイン】ニックネームとパスワード(本名はNG) → Enter / Esc でゲスト</li>' +
-      '<li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    L ランキング、H あそびかた、N ニックネーム変更</li>' +
+    ? '<ul><li>【キャラ選択】キャラをタップ、◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
+    : '<ul><li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    L ランキング、H あそびかた</li>' +
       '<li>【ガシャ】スペース 回す(100どる)、Enter 次へ</li><li>【エンディング】Enter でとばす</li></ul>';
   const chars = CHARS.slice().sort((a, b) => a.score - b.score).map(c =>
     `<div class="ch"><b>${c.name}</b>(スコア <span class="mult">×${c.score}</span>)… ${c.role}<br>${c.desc}</div>`).join('');
