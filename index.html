@@ -240,6 +240,46 @@ body.touch .kh { display: none; }
 .seg button { border: 0; background: none; padding: 8px 14px; font-weight: 800; font-size: 14px; color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 
+/* やりこみ要素 */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.tabs button { border: 0; border-radius: 99px; padding: 7px 13px; font-weight: 800; font-size: 13.5px; background: #e6e3da; color: var(--ink); }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.tabs.small button { padding: 5px 11px; font-size: 13px; }
+.cs-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 22px; margin-top: 12px; }
+.cs-row .cs-mode, .cs-row .cs-stage { margin-top: 0; }
+#csModeNote { margin: 8px 0 0; }
+.cs-mode { display: flex; align-items: center; justify-content: center; gap: 8px 12px; flex-wrap: wrap; margin-top: 12px; color: var(--paper); font-weight: 800; font-size: 14px; }
+.cs-mode .seg { box-shadow: inset 0 0 0 2px rgba(246,245,240,.6); }
+.cs-mode .seg button { color: var(--paper); padding: 7px 12px; }
+.cs-mode .seg button[aria-pressed="true"] { background: var(--yellow); color: var(--ink); }
+.cs-mode .seg button.lock { opacity: .45; }
+#csModeNote { font-size: 13px; font-weight: 700; color: var(--yellow); text-align: center; }
+.bonus { text-align: left; border: 2px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 6px 0 4px; font-size: 14px; line-height: 1.6;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); column-gap: 22px; }
+.bonus div { display: flex; justify-content: space-between; gap: 10px; }
+.bonus .tot { grid-column: 1 / -1; }
+.gacha.with-bonus .machine { transform: scale(.62); transform-origin: top center; height: 132px; }
+.gacha.with-bonus .prize { min-height: 2.6em; margin-top: 0; }
+.bonus b { font-variant-numeric: tabular-nums; }
+.bonus .tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; font-weight: 800; color: var(--vermilion); }
+.locker { max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+.lk-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; max-height: 50vh; border-top: 1px solid var(--line); }
+.lk-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.lk-item small { display: block; opacity: .7; font-size: 12px; font-weight: 600; }
+.lk-item.locked b { opacity: .5; }
+.lk-item .btn { padding: 6px 12px; font-size: 13px; flex: none; }
+.lk-lock { font-size: 12px; opacity: .55; font-weight: 700; flex: none; }
+.lk-slot { font-weight: 800; font-size: 13px; margin: 10px 0 2px; opacity: .7; }
+.chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.ttl { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--yellow); border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+.rank-list .sub { font-size: 12px; opacity: .65; margin-left: 6px; }
+@media (max-height: 480px) {
+  .bonus { font-size: 12.5px; line-height: 1.4; padding: 6px 10px; } .lk-body { max-height: 46vh; }
+  .cs-row { margin-top: 6px; } #csModeNote { margin-top: 4px; font-size: 12px; }
+  .sheet-actions .btn { padding: 8px 12px; font-size: 14px; }
+  .gacha.with-bonus .machine { display: none; }
+}
+
 #rotate { background: var(--navy); z-index: 40; text-align: center; font-weight: 800; font-size: 18px; line-height: 1.7; }
 #rotate .phone { width: 46px; height: 76px; border: 4px solid var(--paper); border-radius: 9px; margin: 0 auto 14px;
   animation: tilt 1.8s ease-in-out infinite; }
@@ -303,9 +343,15 @@ body.touch .kh { display: none; }
     <div class="cs-info" id="csInfo"></div>
     <h2>今日は誰で出勤する?</h2>
     <div class="cards" id="cards"></div>
-    <div class="cs-stage"><button class="btn" id="stPrev" aria-label="前のステージ">◀</button><span id="stName"></span><button class="btn" id="stNext" aria-label="次のステージ">▶</button></div>
+    <div class="cs-row">
+    <div class="cs-mode">モード<span class="kh"> [M]</span>
+      <span class="seg" id="csMode" role="group" aria-label="モード"><button data-m="normal">通常</button><button data-m="overtime">残業</button><button data-m="daily">今日のお題</button></span></div>
+    <div class="cs-stage" id="csStage"><button class="btn" id="stPrev" aria-label="前のステージ">◀</button><span id="stName"></span><button class="btn" id="stNext" aria-label="次のステージ">▶</button></div>
+    </div>
+    <p id="csModeNote" class="hidden"></p>
     <div class="sheet-actions">
       <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
+      <button class="btn ghost" id="csLocker">ガシャ・称号<span class="kh"> [G]</span></button>
       <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
       <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
       <button class="btn primary" id="startGame">この人で出勤する</button>
@@ -317,6 +363,7 @@ body.touch .kh { display: none; }
 <section id="gacha" class="screen dim hidden" aria-label="社内ガシャ">
   <div class="panel gacha">
     <h2 id="gcTitle">社内ガシャ</h2>
+    <div id="gcBonus" class="bonus hidden"></div>
     <p id="gcInfo"></p>
     <div class="machine" aria-hidden="true"><div class="globe"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="body"><div class="slot"></div></div><div class="cap" id="gcCap"></div></div>
     <p class="prize" id="gcPrize">&nbsp;</p>
@@ -376,6 +423,7 @@ body.touch .kh { display: none; }
   <div class="panel">
     <h2 id="rTitle">おつかれさまでした!</h2>
     <p id="rBody"></p>
+    <div id="rBonus" class="bonus hidden"></div>
     <div id="rRank" class="rank-box hidden"></div>
     <div class="row">
       <button class="btn primary" id="rNext">次へ</button>
@@ -402,9 +450,22 @@ body.touch .kh { display: none; }
 <section id="ranking" class="screen dim hidden" aria-label="ランキング">
   <div class="panel">
     <h2>ランキング</h2>
-    <p class="rank-note">PC版(exe)とWeb版、みんなの自己ベスト</p>
+    <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="normal">通常</button><button data-t="overtime">残業</button><button data-t="daily">今日のお題</button><button data-t="time">タイム</button></div>
+    <div class="tabs small hidden" id="rkStages" role="group" aria-label="ステージ"><button data-s="1">ステージ1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button></div>
+    <p class="rank-note" id="rkNote">PC版(exe)とWeb版、みんなの自己ベスト</p>
     <ol id="rankList" class="rank-list"></ol>
     <div class="row"><button class="btn primary" id="closeRank">もどる</button></div>
+  </div>
+</section>
+
+<!-- ロッカー(称号・着せ替え・ガシャ) -->
+<section id="locker" class="screen dim hidden" aria-label="ロッカー">
+  <div class="panel locker">
+    <h2>ロッカー</h2>
+    <p class="rank-note" id="lkInfo"></p>
+    <div class="tabs" role="group" aria-label="表示"><button id="lkTabT">称号</button><button id="lkTabI">着せ替え</button></div>
+    <div class="lk-body" id="lkBody"></div>
+    <div class="row"><button class="btn" id="lkGacha">ガシャを回す(100どる)</button><button class="btn primary" id="lkClose">もどる</button></div>
   </div>
 </section>
 
@@ -486,7 +547,8 @@ const REWARDS = [100, 200, 300, 500, 700];
 // 社内ガシャ(Python版と同じ。weight の合計が100なので、そのまま%)
 const GACHA_COST = 100;
 const PRIZES = [
-  { rank: 'ノーマル', text: 'AI +3', ai: 3, life: 0, special: 0, weight: 60, color: '#f2f2f2' },
+  { rank: 'ノーマル', text: 'AI +3', ai: 3, life: 0, special: 0, weight: 48, color: '#f2f2f2' },
+  { rank: '着せ替え', text: '', ai: 0, life: 0, special: 0, item: true, weight: 12, color: '#CC79A7' },
   { rank: 'レア', text: 'AI +8', ai: 8, life: 0, special: 0, weight: 27, color: '#56B4E9' },
   { rank: '有給休暇', text: 'LIFE +1', ai: 0, life: 1, special: 0, weight: 8, color: '#009E73' },
   { rank: '大当たり', text: '課金パワー ゲット!!', ai: 0, life: 0, special: 1, weight: 5, color: '#ffd700' },
@@ -744,7 +806,7 @@ const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat
 const lam = c => new THREE.MeshLambertMaterial({ color: c });
 
 // ---------------- キャラのモデル(ブロックの組み合わせ) ----------------
-function makeHero(look) {
+function makeHero(look, equip) {
   const root = new THREE.Group(), suit = lam(look.suit), skin = lam('#f5c9a0'), hair = lam(look.hair);
   const part = (parent, x, y, z, w, h, d, m) => { const b = box(w, h, d, m); b.position.set(x, y, z); parent.add(b); return b; };
   const legL = new THREE.Group(), legR = new THREE.Group();
@@ -771,6 +833,7 @@ function makeHero(look) {
     else up(0, 1.9, -0.26, 0.64, 0.45, 0.1, hair);
   }
   root.userData = { legL, legR, armL, armR, upper, t: 0, throwT: 0, bowT: 0, reachT: 0 };
+  if (equip) dressHero(root, look, equip);
   return root;
 }
 function poseHero(h, moving, grounded, dt) {
@@ -794,9 +857,10 @@ const G = {
   player: null, hero: null, vy: 0, grounded: false, yaw: 0, camYaw: 0, pitch: 0.28, inv: 0,
   coffeeUntil: 0, rateUntil: 0, throwLog: [], goal: null, now: 0,
   movers: [], droppers: [], checkpoints: [], bossShots: [], special: 0, sp: null, respawnPt: null, ground: null,
-  acct: null, save: Object.assign({}, DEFAULT_SAVE), doru: 0, startStage: 0,
+  acct: null, save: null, doru: 0, startStage: 0, playMode: 'normal', selMode: 'normal', daily: null, cards: [],
 };
 const keys = {};
+G.save = fixSave(null);
 
 // ---------------- ステージを作る ----------------
 function clearStage() {
@@ -881,13 +945,14 @@ function buildStage(i) {
   for (const e of st.enemies) spawnEnemy(e, false);
   if (st.boss) spawnEnemy(st.boss, true);
   // プレイヤー
-  if (G.ammo < st.ai) G.ammo = st.ai;
+  G.ammo = stageAmmo(st, G.ammo);
   G.respawnPt = new THREE.Vector3(0, 0, 0);
   G.stageScore0 = G.score;            // やり直したときに戻すスコア
   respawn(true);
   if (i === STAGES.length - 1) preloadEndingVoices();
-  startLog();
-  showBanner(`STAGE ${i + 1}\n${st.name}`, 1.8);
+  spawnCards(i);
+  startLog(); startStageStats();
+  showBanner(G.playMode === 'overtime' ? `残業 STAGE ${i + 1}\n${st.name}` : G.playMode === 'daily' ? `今日のお題\n${G.daily.rule.name}` : `STAGE ${i + 1}\n${st.name}`, 1.8);
   updateHud();
 }
 function spawnEnemy(d, boss) {
@@ -895,7 +960,7 @@ function spawnEnemy(d, boss) {
   const mesh = box(size, size, size, new THREE.MeshLambertMaterial({ map: labelTex(d.l, bg, fg) }));
   mesh.position.set(d.p[0], d.p[1], d.p[2]); scene.add(mesh);
   const e = { mesh, label: d.l, size, start: new THREE.Vector3(...d.p), axis: new THREE.Vector3(...(d.axis || [1, 0, 0])),
-              patrol: d.patrol || 0, speed: d.speed || 2, dir: 1, hp: boss ? d.hp : 1, maxHp: boss ? d.hp : 1,
+              patrol: d.patrol || 0, speed: (d.speed || 2) * enemySpeedMul(), dir: 1, hp: boss ? Math.ceil(d.hp * bossHpMul()) : 1, maxHp: boss ? Math.ceil(d.hp * bossHpMul()) : 1,
               boss, arena: d.arena || 0, chase: d.chase || 0, points: boss ? 1000 : 100, dead: false, flash: 0,
               shoot: d.shoot || 0, shootT: (d.shoot || 0) * 0.6, hits: 0, hitCd: 0, guardUntil: 0 };
   if (boss) {
@@ -908,17 +973,22 @@ function spawnEnemy(d, boss) {
 }
 
 // ---------------- プレイヤー ----------------
-function startRun(ch) {
-  G.char = ch; G.score = 0; G.lives = 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
-  // 持ち越すもの(どる・AIの残り・課金パワー)はセーブから
-  G.save.character = Math.max(0, CHARS.indexOf(ch));
-  G.ammo = G.save.ammo; G.special = G.save.special; G.doru = G.save.dol;
+function startRun(ch, mode = G.selMode || 'normal') {
+  if (mode === 'overtime' && !overtimeOpen()) mode = 'normal';
+  G.playMode = mode; G.daily = mode === 'daily' ? dailyOf() : null;
+  if (G.daily) ch = CHARS[G.daily.char];
+  G.char = ch; G.score = 0; G.lives = (G.daily && G.daily.rule.lives) || 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
+  G.runDeaths = 0; G.runThrows = 0;
+  // 持ち越すもの(どる・AIの残り・課金パワー)はセーブから。残業・お題は AI と課金パワーを持ちこまない
+  if (mode === 'normal') G.save.character = Math.max(0, CHARS.indexOf(ch));
+  G.ammo = mode === 'normal' ? G.save.ammo : 0; G.special = mode === 'normal' ? G.save.special : 0; G.doru = G.save.dol;
   G.submitted = false; G.sp = null;
   preloadVoices(ch.name, GAME_VOICE_KEYS);
   if (G.hero) scene.remove(G.hero);
-  G.hero = makeHero(ch.look); scene.add(G.hero);
+  G.hero = makeHero(ch.look, G.save.equip); scene.add(G.hero);
   G.player = G.hero.position;
-  buildStage(Math.min(G.startStage, G.save.unlocked - 1)); setMode('play');
+  G.runFrom = mode === 'normal' ? Math.min(G.startStage, G.save.unlocked - 1) : mode === 'daily' ? G.daily.stage : 0;
+  buildStage(G.runFrom); setMode('play');
 }
 function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
@@ -1058,7 +1128,7 @@ function updateEnemies(dt) {
     const half = e.size / 2;
     if (Math.abs(p.x - m.position.x) < half + 0.45 && Math.abs(p.z - m.position.z) < half + 0.45 &&
         p.y < m.position.y + half && p.y + HEIGHT > m.position.y - half) {
-      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
+      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
       else hurt(e.label.replace('\n', ''));
     }
   }
@@ -1075,8 +1145,9 @@ function hitEnemy(e, dmg, stomp, special) {
   if (e.hp > 0) { e.flash = 0.1; e.mesh.material.color.set('#ff7b7b'); sfx.boss(); if (e.fill) { e.fill.scale.x = Math.max(0.001, e.hp / e.maxHp); e.fill.position.x = -1.45 * (1 - e.fill.scale.x); } return; }
   e.dead = true;
   if (G.log) { if (stomp) G.log.stomp_kills += 1; else if (!special) G.log.ai_kills += 1; }
-  const bonus = stomp ? (e.boss ? 1.5 : 2) : 1, pts = addScore(e.points * bonus);
-  floatText(`完了!\n+${pts}${stomp ? ' 踏みつけ!' : ''}`, e.mesh.position, e.boss ? 3 : 1.6);
+  const cm = stomp && !e.boss ? comboMul() : 1, bonus = stomp ? (e.boss ? 1.5 : 2 * cm) : 1, pts = addScore(e.points * bonus);
+  floatText(`完了!\n+${pts}${stomp ? (G.combo >= 2 ? ` ${G.combo}コンボ!` : ' 踏みつけ!') : ''}`, e.mesh.position, e.boss ? 3 : 1.6);
+  if (stomp && G.combo >= 2) tone(660 + G.combo * 120, 990 + G.combo * 120, 0.1, 'square', 0.1);
   (stomp ? sfx.stomp : sfx.done)();
   if (e.boss) toast(`${e.label} 完了!!`);
   const m = e.mesh; let t = 0;
@@ -1233,7 +1304,7 @@ function playEnding() {
   const set = buildOffice();
   const [pname, ...names] = endingWho();
   preloadEndingVoices();
-  const hero = makeHero(G.char.look); hero.position.set(-7, 0, -5.4); addObj(hero);
+  const hero = makeHero(G.char.look, G.save.equip); hero.position.set(-7, 0, -5.4); addObj(hero);
   const spots = [[-2.8, 3.4], [4.2, 4.6], [0.3, 8.3]];
   const prank = RANK[pname] || 1;
   const cws = names.map((n, i) => {
@@ -1373,6 +1444,7 @@ function updateCheckpoints() {
 
 // ---------------- AI を投げる ----------------
 function canThrow() {
+  if (rule().noAI) { sfx.locked(); toast('今日のお題は AI禁止!\n踏んで倒そう', true); return false; }
   if (G.now < G.rateUntil) { sfx.locked(); return false; }
   if (G.ammo <= 0) { sfx.locked(); toast('AIの残りがない!\n敵は踏んで倒そう', true); return false; }
   const coffee = G.now < G.coffeeUntil, max = coffee ? G.char.shots * 3 : G.char.shots;
@@ -1385,12 +1457,13 @@ function throwAI() {
   if (G.mode !== 'play' || !canThrow()) return;
   G.throwLog.push(G.now); G.ammo -= 1; sfx.throw(); G.hero.userData.throwT = 0.2; say(G.char.name, 'throw');
   if (G.log) G.log.ai_throws += 1;
+  if (G.st) G.st.throws += 1; G.runThrows = (G.runThrows || 0) + 1;
   const fwd = new THREE.Vector3(Math.sin(G.yaw), 0, Math.cos(G.yaw)), right = new THREE.Vector3(Math.cos(G.yaw), 0, -Math.sin(G.yaw));
   const base = G.player.clone().add(new THREE.Vector3(0, 1.4, 0)).addScaledVector(right, -0.4);
   const angles = G.now < G.coffeeUntil ? [-0.31, 0, 0.31] : [0];
   for (const a of angles) {
     const dir = fwd.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
-    const hallu = Math.random() < STAGES[G.stage].hallu * G.char.hallu;
+    const hallu = Math.random() < (STAGES[G.stage].hallu + halluAdd()) * G.char.hallu;
     const mesh = box(0.7, 0.5, 0.08, new THREE.MeshLambertMaterial({ map: hallu ? labelTex('AI?', '#ebd7ff', '#8200a0') : labelTex('AI', '#ffffff', '#1e5ac8') }));
     mesh.position.copy(base).addScaledVector(dir, 0.7); scene.add(mesh);
     const s = { mesh, dir, base: dir.clone(), life: SHOT_LIFE, t: 0, hallu, target: hallu ? null : findTarget(mesh.position, dir) };
@@ -1436,10 +1509,11 @@ function floatText(text, pos, scale, color = '#00963c') {
 function updateFx(dt) { for (const f of G.fx.slice()) if (!f.update(dt)) { scene.remove(f.mesh); G.fx.splice(G.fx.indexOf(f), 1); } }
 
 // ---------------- スコア・ダメージ・クリア ----------------
-function addScore(n) { const pts = Math.round(n * G.char.score); G.score += pts; updateHud(); return pts; }
+function addScore(n) { const pts = Math.round(n * G.char.score * modeMul()); G.score += pts; updateHud(); return pts; }
 function hurt(cause = '') {
   if (G.inv > 0 || G.safe > 0 || G.mode !== 'play') return;   // inv:ミスのあと(点滅) / safe:踏んだ直後・必殺技のあと(点滅しない)
   if (G.log) { const p = G.player; G.log.deaths += 1; G.log.causes.push(cause); G.log.spots.push([p.x, p.y, p.z].map(v => Math.round(v))); }
+  if (G.st) G.st.deaths += 1; G.runDeaths = (G.runDeaths || 0) + 1;
   G.lives -= 1; updateHud();
   if (G.lives <= 0) { sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); persist(); showResult('over'); return; }
   sfx.hurt(); say(G.char.name, 'hurt'); toast('うわっ!', true); respawn(false);
@@ -1450,14 +1524,10 @@ function checkGoal() {
   if (bossAlive()) { if (!checkGoal.t || G.now - checkGoal.t > 2) { checkGoal.t = G.now; sfx.locked();
     const b = G.enemies.find(e => e.boss); toast(`${b.label.replace('\n', '')}を倒さないと\n退勤できない!`, true); } return; }
   sfx.clear(); say(G.char.name, 'clear');
-  endLog('clear');
-  const reward = REWARDS[G.stage] || 0; G.doru += reward;
-  G.save.unlocked = Math.max(G.save.unlocked, Math.min(STAGES.length, G.stage + 2));
-  persist();
-  if (G.stage + 1 < STAGES.length) openGacha(`${STAGES[G.stage].name} クリア! +${reward}どる`);
-  else playEnding();
+  stageCleared();
 }
 function saveBest() {
+  if (G.playMode !== 'normal') return;
   const best = store.get('best', null);
   if (!best || G.score > best.score) store.set('best', { score: G.score, char: G.char.name, stage: G.stage + 1 });
 }
@@ -1509,6 +1579,8 @@ window.addEventListener('keydown', e => {
     if (k === 'Escape') closeIntro();
   } else if (G.mode === 'charsel') {
     if (k === 'l') openRanking();
+    if (k === 'g') openLocker();
+    if (k === 'm') { const ms = ['normal', 'overtime', 'daily'].filter(m => m !== 'overtime' || overtimeOpen()); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
     if (k === 'h') openIntro(() => openCharsel());
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
@@ -1517,6 +1589,9 @@ window.addEventListener('keydown', e => {
     if (k === 'n') openLogin(true);
     if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
     if (k === 'Escape') openLogin(true);
+  } else if (G.mode === 'locker') {
+    if (k === 'Escape') openCharsel();
+    if (k === 'ArrowLeft' || k === 'ArrowRight') { lkTab = lkTab === 'titles' ? 'items' : 'titles'; renderLocker(); }
   } else if (G.mode === 'result') {
     if (k === 'Enter' || k === ' ') { e.preventDefault(); resultNext && resultNext(); }
     if (k === 'Escape') openCharsel();
@@ -1524,6 +1599,7 @@ window.addEventListener('keydown', e => {
     if (k === 'Enter' || k === 'Escape' || k === ' ') { e.preventDefault(); finishEnding(); }
   } else if (G.mode === 'ranking') {
     if (k === 'Enter' || k === 'Escape' || k === ' ') closeRanking();
+    if (k === 'ArrowLeft' || k === 'ArrowRight') { const ts = ['normal', 'overtime', 'daily', 'time']; setRankTab(ts[(ts.indexOf(rkTab) + (k === 'ArrowLeft' ? 3 : 1)) % 4]); }
   }
 });
 window.addEventListener('keyup', e => {
@@ -1609,6 +1685,8 @@ function update(dt) {
   if (G.device !== 'pc' && Math.hypot(stick.x, stick.y) <= 0.15) runUpdate(dt, false, false);
   updateMovers(dt);
   physics(dt);
+  if (G.grounded) G.combo = 0;
+  updateCards(dt);
   G.hero.rotation.y = G.yaw;
   poseHero(G.hero, moving, G.grounded, dt);
   if (G.inv > 0) { G.inv -= dt; G.hero.visible = Math.floor(G.inv * 10) % 2 === 0; } else G.hero.visible = true;
@@ -1653,6 +1731,7 @@ function setMode(m) {
   $('result').classList.toggle('hidden', m !== 'result');
   $('ranking').classList.toggle('hidden', m !== 'ranking');
   $('intro').classList.toggle('hidden', m !== 'intro');
+  $('locker').classList.toggle('hidden', m !== 'locker');
   const inGame = ['play', 'pause', 'result'].includes(m);
   $('hud').classList.toggle('hidden', !inGame);
   $('touch').classList.toggle('hidden', !(m === 'play' && G.device === 'touch'));
@@ -1660,7 +1739,7 @@ function setMode(m) {
 }
 function updateHud() {
   $('hStage').textContent = `STAGE ${G.stage + 1} ${STAGES[G.stage].name}`;
-  $('hLine').textContent = `${G.char.name} ・ LIFE ${G.lives} ・ SCORE ${G.score} ・ ${G.doru}どる`;
+  $('hLine').textContent = `${G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ LIFE ${G.lives} ・ SCORE ${G.score} ・ ${G.doru}どる`;
   $('hAmmoN').textContent = G.ammo;
   $('hAmmo').className = 'ammo' + (G.ammo <= 0 ? ' empty' : G.ammo <= 3 ? ' low' : '');
   $('bSP').classList.toggle('hidden', G.special <= 0);
@@ -1671,6 +1750,8 @@ function status() {
   if (G.now < G.coffeeUntil) s.push(`コーヒー ${Math.ceil(G.coffeeUntil - G.now)}秒`);
   if (G.now < G.rateUntil) s.push(`レート制限 ${Math.ceil(G.rateUntil - G.now)}秒`);
   if (G.special > 0) s.push(`課金パワー ×${G.special}${G.device === 'pc' ? '(Eで発動)' : ''}`);
+  if (G.st) s.push(`社員証 ${G.st.cards}/3`);
+  if (G.combo >= 2) s.push(`${G.combo}コンボ!`);
   const t = s.join(' ・ '); if (t !== statusText) { statusText = t; $('status').textContent = t; }
 }
 let toastTimer = 0;
@@ -1726,8 +1807,14 @@ function openCharsel() {
 }
 function refreshCharsel() {
   const sv = G.save, who = G.acct ? G.acct.name : 'ゲスト';
-  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b></span><span>ハイスコア ${sv.best}</span><span>所持 ${sv.dol}どる</span>` +
+  if (G.selMode === 'overtime' && !overtimeOpen()) G.selMode = 'normal';
+  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span>ハイスコア ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}</span><span>所持 ${sv.dol}どる</span>` +
     `<span>AI ${sv.ammo}</span><span>課金パワー ${sv.special}</span>`;
+  document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); });
+  const note = $('csModeNote');
+  $('csStage').classList.toggle('hidden', G.selMode !== 'normal'); note.classList.toggle('hidden', G.selMode === 'normal');
+  if (G.selMode === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
+  if (G.selMode === 'daily') note.textContent = `今日のお題:${dailyText()}(キャラは固定)`;
   G.startStage = Math.max(0, Math.min(G.startStage, sv.unlocked - 1));
   $('stName').textContent = `スタート:ステージ${G.startStage + 1} ${STAGES[G.startStage].name}`;
   $('stPrev').disabled = G.startStage <= 0; $('stNext').disabled = G.startStage >= sv.unlocked - 1;
@@ -1753,7 +1840,7 @@ function helpHTML(dev) {
     : `<dl class="keys"><dt>左のスティック</dt><dd>移動(倒した方向に歩く)</dd><dt>右側をなぞる</dt><dd>視点を回す</dd>
        <dt>ダッシュ</dt><dd>スティックを最後まで倒し続けると加速</dd><dt>ジャンプ</dt><dd>短く押すと小ジャンプ・ダッシュ中は遠くまで</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>II</dt><dd>一時停止</dd></dl>`;
 }
-const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍)。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
+const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍、着地せずに続けて踏むとコンボ)。各ステージに社員証が3枚かくれているよ。速く・ノーミスで・AIを使わずにクリアするほどボーナスが増える。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
 function refreshVoiceBtns() {
   $('vOn').setAttribute('aria-pressed', String(voiceOn())); $('vOff').setAttribute('aria-pressed', String(!voiceOn()));
   $('mOn').setAttribute('aria-pressed', String(bgmOn())); $('mOff').setAttribute('aria-pressed', String(!bgmOn()));
@@ -1790,6 +1877,9 @@ function showResult(kind) {
   G.lastKind = kind;
   setMode('result');
   $('rRank').classList.add('hidden');
+  $('rBonus').classList.toggle('hidden', !(kind === 'all' || kind === 'daily') || !G.lastBonus);
+  if (kind === 'all' || kind === 'daily') $('rBonus').innerHTML = bonusHTML(G.lastBonus);
+  $('rBody').style.whiteSpace = 'pre-line';
   if (kind !== 'clear' && G.score > 0) rankBox();
   if (kind === 'clear') {
     $('rTitle').textContent = 'GO HOME ON TIME!';
@@ -1797,15 +1887,19 @@ function showResult(kind) {
     $('rNext').textContent = '次のステージへ'; resultNext = () => { buildStage(G.stage + 1); setMode('play'); };
   } else if (kind === 'all') {
     saveBest();
-    $('rTitle').textContent = '定時退社、達成!';
-    $('rBody').textContent = `全5ステージ クリア! 年度末も定時で退勤。スコアは ${G.score}点(${G.char.name})。` +
+    $('rTitle').textContent = G.playMode === 'overtime' ? '残業、完遂!' : '定時退社、達成!';
+    $('rBody').textContent = `${G.playMode === 'overtime' ? '残業モード ' : ''}全5ステージ クリア! スコアは ${G.score}点(${G.char.name})。` +
+      (G.playMode === 'normal' ? '\nキャラ選択で「残業」モードが遊べるようになったよ。' : '') +
       (VOICE.credit ? `\n${VOICE.credit}` : '');
-    $('rBody').style.whiteSpace = 'pre-line';
-    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char);
+    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, G.playMode);
+  } else if (kind === 'daily') {
+    $('rTitle').textContent = 'お題クリア!';
+    $('rBody').textContent = `今日のお題「${G.daily.rule.name}」クリア! スコアは ${G.score}点。` + (G.lastBonus && G.lastBonus.dol ? `\n今日はじめてのクリアなので +${G.lastBonus.dol}どる` : '');
+    $('rNext').textContent = 'もう一度挑戦'; resultNext = () => startRun(G.char, 'daily');
   } else {
     $('rTitle').textContent = '残業、確定…';
     $('rBody').textContent = `${STAGES[G.stage].name}でライフがなくなった。スコアは ${G.score}点。`;
-    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char);
+    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, G.playMode);
   }
   setTimeout(() => $('rNext').focus(), 50);
 }
@@ -1825,7 +1919,10 @@ async function gasPost(body, keepalive = false) {
   const r = await fetch(ONLINE.url, { method: 'POST', keepalive, body: JSON.stringify(Object.assign({ key: ONLINE.secret }, body)) });
   return r.json();
 }
-async function gasTop(n) { const r = await fetch(ONLINE.url + '?n=' + n); return r.json(); }
+async function gasTop(n, key = 'normal') {
+  const q = key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`;
+  const r = await fetch(ONLINE.url + q); return r.json();
+}
 function nowStamp() {
   const d = new Date(), z = v => String(v).padStart(2, '0');
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
@@ -1875,12 +1972,14 @@ async function sendScore(acct) {
   const b = $('rkSend') || $('rkLogin'); if (b) b.disabled = true;
   try {
     const res = await gasPost({ name: acct.name, token: acct.token, score: G.score, stage: G.stage + 1,
-                                character: G.char.name + '(Web)', clear: G.lastKind === 'all', date: nowStamp() });
+                                character: G.char.name + '(Web)', clear: G.lastKind === 'all' || G.lastKind === 'daily', date: nowStamp(),
+                                mode: modeKey(), title: G.save.title || '' });
     if (res.ok) {
       G.submitted = true;
       $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位(${res.total}人中)</p>
         <button class="linky" id="rkView">ランキングを見る</button>`;
-      $('rkView').onclick = openRanking;
+      $('rkView').onclick = () => openRanking();
+      Object.keys(rkCache).forEach(k => delete rkCache[k]);
     } else if (res.error === 'not owner') {
       store.set('acct', null); rkMsg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
     } else { rkMsg('登録できませんでした:' + errText(res.error), 'bad'); if (b) b.disabled = false; }
@@ -1904,7 +2003,8 @@ function openLogin(forceForm = false) {
   setTimeout(() => (quick ? $('lgContinue') : $('lgName')).focus(), 60);
 }
 function startWith(acct, save, msg, created = false) {
-  G.acct = acct; G.save = Object.assign({}, DEFAULT_SAVE, save || {});
+  G.acct = acct; G.save = fixSave(save);
+  G.selMode = store.get('selMode', 'normal');
   // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
   if (created || !store.get('introSeen', false)) {
     G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;
@@ -1950,9 +2050,15 @@ $('lgName').addEventListener('enterkey', () => $('lgPass').focus());
 
 // 今の状態をセーブに入れて、ログインしていればサーバーに保存する
 let saveBusy = Promise.resolve();
-function persist() {
+function persist(menu = false) {
   const sv = G.save;
-  sv.dol = G.doru; sv.ammo = G.ammo; sv.special = G.special; sv.best = Math.max(sv.best || 0, G.score);
+  // menu:ロッカー・ガシャ画面から(プレイの点数は入れない)。残業・お題は AI と課金パワーを持ち帰らない
+  if (menu) { sv.dol = G.doru; sv.ammo = G.ammo; sv.special = G.special; }
+  else {
+    sv.dol = G.doru;
+    if (G.playMode === 'overtime') sv.bestOt = Math.max(sv.bestOt || 0, G.score);
+    else if (G.playMode !== 'daily') { sv.ammo = G.ammo; sv.special = G.special; sv.best = Math.max(sv.best || 0, G.score); }
+  }
   if (!G.acct) return;
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
@@ -1978,7 +2084,7 @@ function endLog(result) {
     stage: L.stage + 1, result, time_sec: Math.round((G.now - L.t0) * 10) / 10, deaths: L.deaths,
     death_causes: L.causes.join(','), death_spots: JSON.stringify(L.spots), ai_throws: L.ai_throws, ai_hits: L.ai_hits,
     hallucinations: L.hallucinations, ai_kills: L.ai_kills, stomp_kills: L.stomp_kills, specials: L.specials, coffee: L.coffee,
-    score: G.score - L.score0,
+    score: G.score - L.score0, mode: modeKey(),
   };
   if (G.acct) { body.name = G.acct.name; body.token = G.acct.token; }
   sendLog(body);
@@ -2010,23 +2116,37 @@ async function flushLogs() {
 addEventListener('pagehide', () => { if (G.log) endLog('quit'); });
 
 // ---------------- 社内ガシャ ----------------
-let gachaBusy = false;
-function openGacha(title) {
+let gachaBusy = false, gachaFrom = 'run';
+function openGacha(title, from = 'run') {
+  gachaFrom = from;
+  if (from === 'menu') { G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; }
+  $('gcBonus').classList.toggle('hidden', from !== 'run' || !G.lastBonus);
+  document.querySelector('#gacha .panel').classList.toggle('with-bonus', from === 'run' && !!G.lastBonus);
+  if (from === 'run' && G.lastBonus) $('gcBonus').innerHTML = bonusHTML(G.lastBonus);
+  $('gcNext').innerHTML = from === 'menu' ? 'もどる<span class="kh"> [Enter]</span>' : '次のステージへ<span class="kh"> [Enter]</span>';
   $('gcTitle').textContent = title || '社内ガシャ';
   $('gcPrize').innerHTML = '&nbsp;'; $('gcCap').className = 'cap';
   refreshGacha(); setMode('gacha');
   setTimeout(() => $('gcSpin').focus(), 60);
 }
 function refreshGacha() {
-  $('gcInfo').textContent = `所持 ${G.doru}どる ・ AI ${G.ammo} ・ LIFE ${G.lives} ・ 課金パワー ${G.special}`;
+  $('gcInfo').textContent = gachaFrom === 'menu' ? `所持 ${G.doru}どる ・ AI ${G.ammo} ・ 課金パワー ${G.special} ・ 着せ替え ${G.save.items.length}/${ITEMS.length}`
+    : `所持 ${G.doru}どる ・ AI ${G.ammo} ・ LIFE ${G.lives} ・ 課金パワー ${G.special}`;
   $('gcSpin').disabled = gachaBusy || G.doru < GACHA_COST;
   $('gcSpin').innerHTML = G.doru < GACHA_COST ? 'どるが足りない' : `回す ${GACHA_COST}どる<span class="kh"> [スペース]</span>`;
 }
 function spinGacha() {
   if (gachaBusy || G.doru < GACHA_COST) { sfx.locked(); return; }
   gachaBusy = true; G.doru -= GACHA_COST; refreshGacha(); audioOn(); sfx.coin();
-  let r = Math.random() * PRIZES.reduce((a, p) => a + p.weight, 0), prize = PRIZES[0];
-  for (const p of PRIZES) { if (r < p.weight) { prize = p; break; } r -= p.weight; }
+  const pool = PRIZES.filter(p => !(gachaFrom === 'menu' && p.life));      // プレイ中じゃないときは LIFE は出ない
+  let r = Math.random() * pool.reduce((a, p) => a + p.weight, 0), prize = pool[0];
+  for (const p of pool) { if (r < p.weight) { prize = p; break; } r -= p.weight; }
+  if (prize.item) {
+    const left = ITEMS.filter(x => !G.save.items.includes(x.id));
+    if (left.length) { const it = left[Math.floor(Math.random() * left.length)]; G.save.items.push(it.id); prize = Object.assign({}, prize, { text: `${it.name}\n(ロッカーでつけられる)` });
+      if (G.save.items.length >= ITEMS.length) award('kisekae'); }
+    else prize = PRIZES.find(p => p.rank === 'レア');
+  }
   const cap = $('gcCap'); cap.style.setProperty('--cap', prize.color);
   cap.className = 'cap'; void cap.offsetWidth; cap.className = 'cap drop';
   $('gcPrize').innerHTML = '&nbsp;';
@@ -2035,10 +2155,10 @@ function spinGacha() {
     G.ammo += prize.ai; G.lives = Math.min(9, G.lives + prize.life); G.special += prize.special;
     $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}`;
     (prize.special ? sfx.power : prize.life ? sfx.power : sfx.done)();
-    gachaBusy = false; refreshGacha(); updateHud(); persist();
+    gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu');
   }, 950);
 }
-function gachaNext() { if (gachaBusy) return; buildStage(G.stage + 1); setMode('play'); }
+function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return openLocker(); buildStage(G.stage + 1); setMode('play'); }
 $('gcSpin').onclick = spinGacha;
 $('gcNext').onclick = gachaNext;
 
@@ -2065,6 +2185,12 @@ function introPages() {
       '<li>休暇ブロック:ライフ+1 / 課金ブロック:必殺技</li><li>黄色い線の外は穴。落ちるとミス</li><li>クリアでもらえる「どる」でガシャを回そう</li></ul>'],
     ['ゲーム中の操作', ctl],
     ['画面ごとの操作', screens],
+    ['スコアの稼ぎ方', '<ul><li>敵:AIで倒すと100点、踏むと200点</li><li><b>コンボ</b>:着地しないで続けて踏むと 200→400→800→1000点</li>' +
+      '<li><b>社員証</b>:各ステージに3枚かくれている(1枚500点)</li><li>クリアすると<b>ボーナス</b>:定時(速いほど・最大2000)/ノーミス 1000/AI節約(投げないほど・最大1000)/全員たおした 500</li>' +
+      '<li>キャラのスコア倍率(新人×1.5など)は全部にかかる</li></ul><p>速さ・全部回る・AIを使わない、ぜんぶ同時には取れない。どれをねらう?</p>'],
+    ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬いけど、スコアとどるが×1.5。ランキングも別</li>' +
+      '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li>' +
+      '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。キャラ選択の「ガシャ・称号」でつけかえ</li></ul>'],
     ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
   ];
 }
@@ -2095,23 +2221,310 @@ $('csHelp').onclick = () => openIntro(() => openCharsel());
 $('csRank').onclick = () => openRanking();
 
 // ランキング画面
-let rankFrom = 'title';
-async function openRanking() {
-  rankFrom = G.mode; setMode('ranking');
-  const list = $('rankList'); list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
-  const me = (store.get('acct', null) || {}).name;
-  try {
-    const res = await gasTop(10);
-    const rows = (res.scores || []);
-    list.innerHTML = rows.length ? rows.map((e, i) =>
-      `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`).join('')
-      : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
-  } catch (e) { list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
+let rankFrom = 'title', rkTab = 'normal', rkStage = 1, rkSeq = 0;
+const rkCache = {};
+function openRanking() {
+  if (G.mode !== 'ranking') rankFrom = G.mode;
+  setMode('ranking'); setRankTab(G.mode === 'ranking' ? rkTab : (G.playMode === 'overtime' && rankFrom === 'result' ? 'overtime' : G.playMode === 'daily' && rankFrom === 'result' ? 'daily' : rkTab));
 }
+function setRankTab(t, stage) {
+  rkTab = t; if (stage) rkStage = stage;
+  document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
+  document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
+  $('rkStages').classList.toggle('hidden', t !== 'time');
+  $('rkNote').textContent = { normal: 'PC版(exe)とWeb版、みんなの自己ベスト', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
+    daily: '今日のお題:' + dailyText(), time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t];
+  loadRank();
+}
+async function loadRank() {
+  const seq = ++rkSeq, list = $('rankList'), me = ((G.acct || store.get('acct', null)) || {}).name;
+  const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + jstDay() : rkTab;
+  const draw = res => {
+    if (seq !== rkSeq) return;
+    if (rkTab === 'time') {
+      const rows = ((res.times || {})[rkStage] || []);
+      list.innerHTML = rows.length ? rows.map((e, i) => `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}<span class="sub">${escapeHtml(e.character || '')}</span></span><b>${Number(e.sec).toFixed(1)}秒</b></li>`).join('')
+        : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
+    } else {
+      const rows = res.scores || [];
+      list.innerHTML = rows.length ? rows.map((e, i) =>
+        `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}${titleChip(e.title)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`).join('')
+        : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
+    }
+  };
+  const hit = rkCache[key];
+  if (hit && Date.now() - hit.t < 30000) return draw(hit.res);
+  list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
+  try {
+    const res = await gasTop(20, key);
+    rkCache[key] = { t: Date.now(), res }; draw(res);
+  } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
+}
+document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.onclick = () => setRankTab(b.dataset.t));
+document.querySelectorAll('#rkStages [data-s]').forEach(b => b.onclick = () => setRankTab('time', Number(b.dataset.s)));
 function closeRanking() { if (rankFrom === 'charsel') openCharsel(); else setMode(rankFrom === 'result' ? 'result' : 'title'); }
 function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 $('openRankTitle').onclick = openRanking;
 $('closeRank').onclick = closeRanking;
+
+// ================= やりこみ要素(スコアボーナス・社員証・称号・着せ替え・モード・タイムアタック) =================
+// ・今までの点の入り方は変えず、ボーナスを「足す」だけ(前の記録もそのままランキングで有効)
+const PAR = [30, 50, 60, 70, 80];               // 定時ボーナスの目安タイム(秒)。この6割以内なら満点、2倍かかると0点
+const BONUS = { time: 2000, nomiss: 1000, aiSave: 1000, aiStep: 100, allKill: 500, card: 500, daily: 300 };
+const COMBO_MUL = [1, 2, 4, 5];                 // 着地せずに続けて踏むと 200 → 400 → 800 → 1000点
+const OVERTIME = { speed: 1.35, bossHp: 1.5, hallu: 0.1, ai: 0.8, score: 1.5, dol: 1.5 };
+// 社員証:各ステージ3枚(ちょっと見つけにくい所)
+const CARDS = [
+  [[0, 6.2, 24], [-13, 0.9, -8], [13, 0.9, 38]],
+  [[6, 5.0, 24], [14, 0.9, -8], [-14, 0.9, 58]],
+  [[0, 1.6, 16.5], [13, 0.9, 34], [-13, 0.9, 77]],
+  [[0, 2.7, 19], [11, 0.9, 26], [-11, 0.9, 84]],
+  [[0, 0.9, 25], [-6, 6.9, 61], [7, 6.9, 99]],
+];
+const TITLES = [
+  { id: 'teiji', name: '定時の人', desc: '全5ステージをクリアする' },
+  { id: 'jiriki', name: '自力でやりました', desc: 'AIを1回も投げずにステージをクリア' },
+  { id: 'combo4', name: '踏み踏み名人', desc: '着地しないで4回続けて踏む' },
+  { id: 'speed', name: '定時の鬼', desc: '定時ボーナス満点でクリア' },
+  { id: 'zenin', name: '仕事を残さない', desc: '敵を全員倒してクリア' },
+  { id: 'card1', name: '社員証ひろい', desc: '社員証を1枚見つける' },
+  { id: 'cards', name: '社員証コレクター', desc: '社員証を15枚ぜんぶ集める' },
+  { id: 'muketsu', name: '無遅刻無欠勤', desc: 'ステージ1から1回もミスせずに全クリ' },
+  { id: 'ai_free', name: 'AI断ち', desc: 'ステージ1からAIを1回も投げずに全クリ' },
+  { id: 'allchar', name: '全員定時', desc: '新人・先輩・上司の3人で全クリ' },
+  { id: 'ace', name: 'エース社員', desc: '1回のプレイで30,000点' },
+  { id: 'zangyo', name: '残業マスター', desc: '残業モードで全クリ' },
+  { id: 'daily', name: 'お題クリア', desc: '今日のお題をクリア' },
+  { id: 'kisekae', name: 'おしゃれ番長', desc: '着せ替えをぜんぶ集める' },
+];
+const ITEMS = [
+  { id: 'tie_red', slot: 'tie', name: '赤ネクタイ', color: '#d7263d' },
+  { id: 'tie_gold', slot: 'tie', name: '金ネクタイ', color: '#e0b000' },
+  { id: 'tie_green', slot: 'tie', name: '緑ネクタイ', color: '#009E73' },
+  { id: 'hat_helmet', slot: 'hat', name: '安全ヘルメット', color: '#f2c200' },
+  { id: 'hat_hachimaki', slot: 'hat', name: '定時ハチマキ', color: '#ffffff' },
+  { id: 'hat_crown', slot: 'hat', name: '社長の王冠', color: '#e0b000' },
+  { id: 'gl_round', slot: 'glasses', name: '丸メガネ', color: '#333333' },
+  { id: 'gl_sun', slot: 'glasses', name: 'サングラス', color: '#111111' },
+];
+const SLOT_NAMES = { tie: 'ネクタイ', hat: '頭', glasses: 'メガネ' };
+const DAILY_RULES = [
+  { id: 'stomp', name: 'AI禁止の日', desc: 'AIは投げられない。ぜんぶ踏んで倒そう', noAI: true },
+  { id: 'ai5', name: 'AI節約の日', desc: 'AIは5個だけ', ai: 5 },
+  { id: 'life1', name: '一発勝負の日', desc: 'ライフは1つだけ', lives: 1 },
+  { id: 'hallu', name: 'AIが寝ぼけている日', desc: 'ハルシネーションがすごく多い', hallu: 0.35 },
+  { id: 'fast', name: '仕事が速い日', desc: '敵がとても速い', speed: 1.6 },
+  { id: 'rush', name: '定時ダッシュの日', desc: '定時ボーナスが2倍', timeMul: 2 },
+];
+function defaultSave() {
+  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0,
+           titles: [], items: [], cards: [], title: '', equip: {}, times: [0, 0, 0, 0, 0] };
+}
+function fixSave(sv) {
+  const s = Object.assign(defaultSave(), sv || {});
+  for (const k of ['titles', 'items', 'cards']) if (!Array.isArray(s[k])) s[k] = [];
+  if (!s.equip || typeof s.equip !== 'object') s.equip = {};
+  if (!Array.isArray(s.times)) s.times = [0, 0, 0, 0, 0];
+  return s;
+}
+
+// ---- モード(通常・残業・今日のお題) ----
+function jstDay(offset = 0) { return new Date(Date.now() + 9 * 3600e3 + offset * 864e5).toISOString().slice(0, 10).replace(/-/g, ''); }
+function dailyOf(day = jstDay()) {
+  let h = 7; for (const c of day) h = (h * 31 + c.charCodeAt(0)) % 1000003;
+  return { day, stage: h % STAGES.length, char: Math.floor(h / 7) % CHARS.length, rule: DAILY_RULES[Math.floor(h / 31) % DAILY_RULES.length] };
+}
+function dailyText(d = dailyOf()) {
+  return `ステージ${d.stage + 1}「${STAGES[d.stage].name}」× ${CHARS[d.char].name} ×「${d.rule.name}」(${d.rule.desc})`;
+}
+function overtimeOpen() { return !!(G.save.cleared || G.save.unlocked >= STAGES.length); }
+function modeKey() { return G.playMode === 'daily' ? 'daily-' + G.daily.day : (G.playMode || 'normal'); }
+function rule() { return G.playMode === 'daily' && G.daily ? G.daily.rule : {}; }
+function modeMul() { return G.playMode === 'overtime' ? OVERTIME.score : 1; }
+function enemySpeedMul() { return G.playMode === 'overtime' ? OVERTIME.speed : (rule().speed || 1); }
+function bossHpMul() { return G.playMode === 'overtime' ? OVERTIME.bossHp : 1; }
+function halluAdd() { return G.playMode === 'overtime' ? OVERTIME.hallu : (rule().hallu || 0); }
+function stageAmmo(st, have) {
+  if (G.playMode === 'daily') return rule().noAI ? 0 : (rule().ai || st.ai);
+  if (G.playMode === 'overtime') return Math.max(have, Math.floor(st.ai * OVERTIME.ai));
+  return Math.max(have, st.ai);
+}
+const MODE_NAMES = { normal: '通常', overtime: '残業', daily: '今日のお題' };
+function setSelMode(m) {
+  if (m === 'overtime' && !overtimeOpen()) { sfx.locked(); toast('ステージ5まで進むと\n残業モードが開くよ', true); return; }
+  G.selMode = m; store.set('selMode', m); refreshCharsel();
+}
+
+// ---- 1ステージの記録とボーナス ----
+function startStageStats() { G.st = { t0: G.now, throws: 0, deaths: 0, cards: 0 }; G.combo = 0; }
+function comboMul() { return COMBO_MUL[Math.min(COMBO_MUL.length, Math.max(1, G.combo || 1)) - 1]; }
+function onStomp() {
+  G.combo = (G.combo || 0) + 1;
+  if (G.combo >= 4) award('combo4');
+}
+function stageBonus() {
+  const st = G.st || { t0: G.now, throws: 0, deaths: 0, cards: 0 }, sec = Math.round((G.now - st.t0) * 10) / 10;
+  const par = PAR[G.stage] || 60, k = Math.max(0, Math.min(1, (2 * par - sec) / (1.4 * par)));
+  const lines = [];
+  const add = (label, n) => lines.push([label, n > 0 ? addScore(n) : 0]);
+  add(`定時ボーナス(${sec.toFixed(1)}秒)`, Math.round(BONUS.time * k * (rule().timeMul || 1) / 10) * 10);
+  add('ノーミス', st.deaths === 0 ? BONUS.nomiss : 0);
+  add(`AI節約(投げた回数 ${st.throws})`, Math.max(0, BONUS.aiSave - st.throws * BONUS.aiStep));
+  add('全員たおした', G.enemies.length === 0 ? BONUS.allKill : 0);
+  return { lines, sec, full: k >= 1, cards: st.cards, throws: st.throws, deaths: st.deaths, stage: G.stage };
+}
+function bonusHTML(b) {
+  if (!b) return '';
+  const tot = b.lines.reduce((a, l) => a + l[1], 0);
+  return b.lines.map(([l, n]) => `<div><span>${escapeHtml(l)}</span><b>${n ? '+' + n : '—'}</b></div>`).join('') +
+    `<div><span>社員証</span><b>${b.cards} / 3</b></div>` +
+    (b.timeNote ? `<div><span>タイム</span><b>${escapeHtml(b.timeNote)}</b></div>` : '') +
+    `<div class="tot"><span>ボーナス合計</span><b>+${tot}</b></div>`;
+}
+function stageCleared() {
+  const b = stageBonus();
+  endLog('clear');
+  if (b.throws === 0) award('jiriki');
+  if (b.full) award('speed');
+  if (G.enemies.length === 0) award('zenin');
+  b.timeNote = recordTime(b.sec);
+  G.lastBonus = b;
+  if (G.playMode === 'daily') return finishDaily();
+  const reward = Math.round((REWARDS[G.stage] || 0) * (G.playMode === 'overtime' ? OVERTIME.dol : 1)); G.doru += reward;
+  if (G.playMode !== 'overtime') G.save.unlocked = Math.max(G.save.unlocked, Math.min(STAGES.length, G.stage + 2));
+  if (G.stage + 1 < STAGES.length) { persist(); openGacha(`${STAGES[G.stage].name} クリア! +${reward}どる`, 'run'); }
+  else { allCleared(); persist(); playEnding(); }
+}
+function allCleared() {
+  const sv = G.save;
+  if (G.score >= 30000) award('ace');
+  if (G.playMode === 'overtime') { award('zangyo'); return; }
+  sv.cleared = 1;
+  sv.clearChars = (sv.clearChars || 0) | (1 << Math.max(0, CHARS.indexOf(G.char)));
+  award('teiji');
+  if (G.runFrom === 0 && G.runDeaths === 0) award('muketsu');
+  if (G.runFrom === 0 && G.runThrows === 0) award('ai_free');
+  if (sv.clearChars === (1 << CHARS.length) - 1) award('allchar');
+}
+function finishDaily() {
+  award('daily');
+  const key = 'dailyDol:' + (G.acct ? G.acct.name : 'guest') + ':' + G.daily.day;
+  if (!store.get(key, false)) { store.set(key, true); G.doru += BONUS.daily; G.lastBonus.dol = BONUS.daily; }
+  if (G.score >= 30000) award('ace');
+  persist(); showResult('daily');
+}
+// タイムアタック(通常モードだけ記録)
+function recordTime(sec) {
+  if (G.playMode !== 'normal') return '';
+  const t = G.save.times || (G.save.times = [0, 0, 0, 0, 0]), i = G.stage, old = t[i];
+  if (old && sec >= old) return `${sec.toFixed(1)}秒(ベスト ${old}秒)`;
+  t[i] = sec;
+  if (G.acct && sec >= 6) gasPost({ action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name }).catch(() => {});
+  return `${sec.toFixed(1)}秒 自己ベスト!`;
+}
+
+// ---- 社員証 ----
+let cardTexCache = null;
+function cardTex() {
+  if (cardTexCache) return cardTexCache;
+  const c = document.createElement('canvas'); c.width = 160; c.height = 220; const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 160, 220); g.fillStyle = '#1f4e9c'; g.fillRect(0, 0, 160, 54);
+  g.fillStyle = '#ffffff'; g.font = '800 34px sans-serif'; g.textAlign = 'center'; g.fillText('社員証', 80, 40);
+  g.fillStyle = '#c9d6ea'; g.fillRect(40, 70, 80, 90); g.fillStyle = '#1f4e9c'; g.fillRect(30, 176, 100, 12); g.fillRect(30, 196, 70, 10);
+  g.strokeStyle = '#1d2433'; g.lineWidth = 8; g.strokeRect(4, 4, 152, 212);
+  return (cardTexCache = new THREE.CanvasTexture(c));
+}
+function spawnCards(i) {
+  G.cards = [];
+  (CARDS[i] || []).forEach((p, k) => {
+    const m = addObj(box(0.55, 0.75, 0.06, new THREE.MeshLambertMaterial({ map: cardTex(), emissive: 0x111a33 })));
+    m.position.set(p[0], p[1], p[2]);
+    G.cards.push({ mesh: m, id: `${i + 1}${'abc'[k]}`, y: p[1], got: false });
+  });
+}
+function updateCards(dt) {
+  const p = G.player;
+  for (const c of G.cards || []) {
+    if (c.got) continue;
+    const m = c.mesh; m.rotation.y += dt * 2.4; m.position.y = c.y + Math.sin(G.now * 3 + c.y) * 0.12;
+    if (Math.abs(p.x - m.position.x) < 0.8 && Math.abs(p.z - m.position.z) < 0.8 && m.position.y > p.y - 0.4 && m.position.y < p.y + HEIGHT + 0.2) {
+      c.got = true; scene.remove(m); G.st.cards += 1;
+      const pts = addScore(BONUS.card); sfx.coin(); tone(1320, 1760, 0.12, 'square', 0.1, 0.08);
+      floatText(`社員証!\n+${pts}`, m.position, 1.6, '#1f4e9c');
+      const sv = G.save; if (!sv.cards.includes(c.id)) sv.cards.push(c.id);
+      award('card1');
+      if (sv.cards.length >= STAGES.length * 3) award('cards');
+      toast(`社員証 ${G.st.cards} / 3`);
+    }
+  }
+}
+
+// ---- 称号 ----
+const noticeQ = [];
+let noticeBusy = false;
+function notice(text) {
+  noticeQ.push(text); if (noticeBusy) return;
+  const next = () => { const t = noticeQ.shift(); if (!t) { noticeBusy = false; return; } noticeBusy = true; showBanner(t, 1.8); setTimeout(next, 2000); };
+  next();
+}
+function award(id) {
+  const sv = G.save, t = TITLES.find(x => x.id === id);
+  if (!t || sv.titles.includes(id)) return;
+  sv.titles.push(id);
+  if (!sv.title) sv.title = id;            // はじめての称号は自動でつける
+  sfx.power(); notice(`称号ゲット!\n「${t.name}」`);
+}
+function titleName(id) { const t = TITLES.find(x => x.id === id); return t ? t.name : ''; }
+function titleChip(id) { const n = titleName(id); return n ? `<span class="ttl">${escapeHtml(n)}</span>` : ''; }
+
+// ---- 着せ替え(キャラの見た目に足す) ----
+function dressHero(root, look, equip) {
+  const u = root.userData.upper; if (!u || !equip) return;
+  const it = slot => ITEMS.find(x => x.id === equip[slot]);
+  const add = (x, y, z, w, h, d, col) => { const b = box(w, h, d, lam(col)); b.position.set(x, y - 0.8, z); u.add(b); return b; };
+  const tie = it('tie'); if (tie) add(0, 1.22, 0.24, 0.11, 0.45, 0.015, tie.color);
+  const top = look.style === 'bald' ? 2.08 : 2.17, hat = it('hat');
+  if (hat && hat.id === 'hat_helmet') { add(0, top + 0.1, 0, 0.72, 0.22, 0.68, hat.color); add(0, top + 0.01, 0.33, 0.72, 0.05, 0.16, hat.color); }
+  if (hat && hat.id === 'hat_hachimaki') { add(0, 2.04, 0, 0.7, 0.13, 0.66, '#ffffff'); add(0, 2.04, 0.335, 0.14, 0.11, 0.012, '#d7263d'); add(0.14, 1.97, -0.345, 0.1, 0.24, 0.03, '#ffffff'); }
+  if (hat && hat.id === 'hat_crown') { add(0, top + 0.07, 0, 0.5, 0.14, 0.5, hat.color); for (const [x, z] of [[-0.18, 0.18], [0.18, 0.18], [0, 0.18], [-0.18, -0.18], [0.18, -0.18]]) add(x, top + 0.2, z, 0.1, 0.14, 0.1, hat.color); add(0, top + 0.08, 0.255, 0.1, 0.08, 0.01, '#d7263d'); }
+  const gl = it('glasses');
+  if (gl && gl.id === 'gl_round') for (const x of [-0.13, 0.13]) { add(x, 1.85, 0.29, 0.2, 0.18, 0.01, '#333333'); add(x, 1.85, 0.296, 0.14, 0.12, 0.01, '#d8ecf8'); }
+  if (gl && gl.id === 'gl_sun') { for (const x of [-0.13, 0.13]) add(x, 1.85, 0.29, 0.22, 0.14, 0.02, '#111111'); add(0, 1.87, 0.29, 0.1, 0.03, 0.02, '#111111'); }
+}
+
+// ---- ロッカー(称号・着せ替え・ガシャ) ----
+let lkTab = 'titles';
+function openLocker(tab) { if (tab) lkTab = tab; renderLocker(); setMode('locker'); }
+function renderLocker() {
+  const sv = G.save;
+  $('lkInfo').textContent = `所持 ${sv.dol}どる ・ 称号 ${sv.titles.length}/${TITLES.length} ・ 着せ替え ${sv.items.length}/${ITEMS.length} ・ 社員証 ${sv.cards.length}/${STAGES.length * 3}` + (G.acct ? '' : '(ゲストは保存されません)');
+  $('lkTabT').setAttribute('aria-pressed', String(lkTab === 'titles')); $('lkTabI').setAttribute('aria-pressed', String(lkTab === 'items'));
+  const body = $('lkBody');
+  if (lkTab === 'titles') {
+    body.innerHTML = TITLES.map(t => {
+      const have = sv.titles.includes(t.id), on = sv.title === t.id;
+      return `<div class="lk-item ${have ? '' : 'locked'}"><span><b>${have ? escapeHtml(t.name) : '???'}</b><small>${escapeHtml(t.desc)}</small></span>` +
+        (have ? `<button class="btn ${on ? 'primary' : ''}" data-title="${t.id}">${on ? 'つけている' : 'つける'}</button>` : '<span class="lk-lock">未獲得</span>') + '</div>';
+    }).join('') + `<div class="lk-item"><span><b>称号をはずす</b><small>ランキングに称号を出さない</small></span><button class="btn" data-title="">はずす</button></div>`;
+    body.querySelectorAll('[data-title]').forEach(b => b.onclick = () => { sv.title = b.dataset.title; persist(true); renderLocker(); });
+  } else {
+    body.innerHTML = Object.keys(SLOT_NAMES).map(slot => {
+      const list = ITEMS.filter(x => x.slot === slot);
+      return `<div class="lk-slot">${SLOT_NAMES[slot]}</div>` + list.map(x => {
+        const have = sv.items.includes(x.id), on = sv.equip[slot] === x.id;
+        return `<div class="lk-item ${have ? '' : 'locked'}"><span><i class="chip" style="background:${x.color}"></i><b>${have ? escapeHtml(x.name) : '???'}</b><small>${have ? '' : 'ガシャで出るかも'}</small></span>` +
+          (have ? `<button class="btn ${on ? 'primary' : ''}" data-slot="${slot}" data-item="${on ? '' : x.id}">${on ? 'はずす' : 'つける'}</button>` : '<span class="lk-lock">未入手</span>') + '</div>';
+      }).join('');
+    }).join('');
+    body.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { const s = b.dataset.slot; if (b.dataset.item) sv.equip[s] = b.dataset.item; else delete sv.equip[s]; persist(true); renderLocker(); });
+  }
+}
+$('lkTabT').onclick = () => { lkTab = 'titles'; renderLocker(); };
+$('lkTabI').onclick = () => { lkTab = 'items'; renderLocker(); };
+$('lkGacha').onclick = () => openGacha('社内ガシャ', 'menu');
+$('lkClose').onclick = () => openCharsel();
+$('csLocker').onclick = () => openLocker();
+document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => setSelMode(b.dataset.m));
 
 // ダブルタップ・ピンチで拡大しない(iPhone の Safari は viewport の指定だけでは止まらないため)
 document.addEventListener('gesturestart', e => e.preventDefault());
