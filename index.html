@@ -948,6 +948,7 @@ function buildStage(i) {
   G.ammo = stageAmmo(st, G.ammo);
   G.respawnPt = new THREE.Vector3(0, 0, 0);
   G.stageScore0 = G.score;            // やり直したときに戻すスコア
+  G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
   G.stageAmmo0 = G.ammo; G.stageSpecial0 = G.special; G.stageLives0 = G.lives;   // やり直したときに戻す持ち物
   respawn(true);
   if (i === STAGES.length - 1) preloadEndingVoices();
@@ -979,7 +980,7 @@ function startRun(ch, mode = G.selMode || 'normal') {
   G.playMode = mode; G.daily = mode === 'daily' ? dailyOf() : null;
   if (G.daily) ch = CHARS[G.daily.char];
   G.char = ch; G.score = 0; G.lives = (G.daily && G.daily.rule.lives) || 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
-  G.runDeaths = 0; G.runThrows = 0;
+  G.runDeaths = 0; G.runThrows = 0; G.runId = (G.runId || 0) + 1;
   // 持ち越すもの(どる・AIの残り・課金パワー)はセーブから。残業・お題は AI と課金パワーを持ちこまない
   if (mode === 'normal') G.save.character = Math.max(0, CHARS.indexOf(ch));
   G.ammo = mode === 'normal' ? G.save.ammo : 0; G.special = mode === 'normal' ? G.save.special : 0; G.doru = G.save.dol;
@@ -1198,6 +1199,7 @@ function useSpecial() {
   G.sp = { t: 0, targets, marks, strikes: [], started: 0, boom: false, yaw0: G.yaw };
   G.mode = 'special'; say(G.char.name, 'special'); if (G.log) G.log.specials += 1;
   $('spDark').classList.remove('hidden'); $('spBanner').classList.remove('hidden');
+  $('touch').classList.add('hidden');      // 必殺技の演出中はタッチボタンを隠す
   sfx.charge(); updateHud();
 }
 function updateSpecial(dt) {
@@ -1243,6 +1245,7 @@ function updateSpecial(dt) {
     sp.marks.forEach(m => scene.remove(m)); sp.strikes.forEach(st => scene.remove(st.m));
     G.sp = null; G.mode = 'play'; G.safe = Math.max(G.safe || 0, 1);
     $('spDark').classList.add('hidden'); $('spBanner').classList.add('hidden');
+    $('touch').classList.toggle('hidden', G.device !== 'touch');
     updateHud();
   }
 }
@@ -1314,6 +1317,7 @@ function playEnding() {
   });
   cws[0].rotation.y = -Math.PI / 2; cws[1].rotation.y = Math.PI / 2; cws[2].rotation.y = Math.PI;
   if (G.hero) G.hero.visible = false;
+  if (heroShadow) heroShadow.visible = false;
   END = { t: 0, ev: [], walk: [], turns: [], bubbles: [], hero, cws, set, pname, prank, plan: hero.position.clone(),
           cam: { mode: 'fixed', pos: new THREE.Vector3(-3.2, 4.2, -14), look: new THREE.Vector3(-6.5, 1.3, -5) } };
   camera.position.copy(END.cam.pos); camera.lookAt(END.cam.look);
@@ -1516,7 +1520,7 @@ function hurt(cause = '') {
   if (G.log) { const p = G.player; G.log.deaths += 1; G.log.causes.push(cause); G.log.spots.push([p.x, p.y, p.z].map(v => Math.round(v))); }
   if (G.st) G.st.deaths += 1; G.runDeaths = (G.runDeaths || 0) + 1;
   G.lives -= 1; updateHud();
-  if (G.lives <= 0) { if (G.score >= 30000) award('ace'); sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); persist(); showResult('over'); return; }
+  if (G.lives <= 0) { if (G.score >= 30000) award('ace'); sfx.over(); say(G.char.name, 'gameover'); saveBest(); endLog('over'); dropStagePickups(); persist(); showResult('over'); return; }
   sfx.hurt(); say(G.char.name, 'hurt'); toast('うわっ!', true); respawn(false);
 }
 function checkGoal() {
@@ -1552,7 +1556,8 @@ window.addEventListener('keydown', e => {
   }
   const k = keyOf(e);
   // メニューでボタンにフォーカスがあるときの Enter / スペースは、ボタンに任せる(2回動かないように)
-  if (G.mode !== 'play' && e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) return;
+  if (G.mode !== 'play' && G.mode !== 'gacha' && e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) return;
+  if (G.mode === 'gacha' && (k === 'Enter' || k === ' ') && e.target && e.target.blur) { e.preventDefault(); e.target.blur(); }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(k)) e.preventDefault();
   keys[k] = true;
   if (e.repeat) return;
@@ -1799,7 +1804,7 @@ function openCharsel() {
       <div><span>AI精度</span><span>${stars(3 + (1 - c.hallu) * 3)}</span></div>
       <div><span>AIを続けて投げられる数</span><span>${c.shots}個</span></div>
       <div><span>スコア倍率</span><span class="mult">×${c.score}</span></div></div>`;
-    b.onclick = () => setPicked(i);
+    b.onclick = () => { setPicked(i); b.blur(); };
     b.ondblclick = () => { picked = i; startRun(CHARS[picked]); };
     wrap.appendChild(b);
   });
@@ -1862,10 +1867,19 @@ function closePause() { setMode(pauseReturn); refreshTitle(); }
 $('bPause').onclick = () => { if (G.mode === 'play') openPause(); };
 $('resume').onclick = closePause;
 $('retry').onclick = () => { setMode('play'); retryStage(); };
-$('toMenu').onclick = () => { endLog('quit'); persist(); openCharsel(); };
+function dropStagePickups() {   // クリアしていないステージで増えた分は持ち帰らない(使った分はそのまま減る)
+  if (G.stageAmmo0 !== undefined) G.ammo = Math.min(G.ammo, G.stageAmmo0);
+  if (G.stageSpecial0 !== undefined) G.special = Math.min(G.special, G.stageSpecial0);
+}
+$('toMenu').onclick = () => { endLog('quit'); dropStagePickups(); persist(); sendScoreQuiet(); openCharsel(); };
 $('openHelpTitle').onclick = () => openPause('あそびかた');
-$('segPC').onclick = () => { G.device = 'pc'; store.set('device', 'pc'); document.body.classList.remove('touch'); openPause($('pauseTitle').textContent); };
-$('segTouch').onclick = () => { G.device = 'touch'; store.set('device', 'touch'); document.body.classList.add('touch'); openPause($('pauseTitle').textContent); };
+function setDevice(dev) {   // 一時停止画面のまま、説明と表示だけ切りかえる(もどる先は変えない)
+  G.device = dev; store.set('device', dev); document.body.classList.toggle('touch', dev === 'touch');
+  $('helpBody').innerHTML = RULES + helpHTML(G.device);
+  $('segPC').setAttribute('aria-pressed', String(dev === 'pc')); $('segTouch').setAttribute('aria-pressed', String(dev === 'touch'));
+}
+$('segPC').onclick = () => setDevice('pc');
+$('segTouch').onclick = () => setDevice('touch');
 function retryStage() {
   // やり直したら、スコア・AI・課金パワーはステージの最初に戻す(ブロックを叩き直して増やせないように)。ライフは増えない
   endLog('retry'); G.score = G.stageScore0 || 0;
@@ -1974,25 +1988,39 @@ async function login(name, pass) {
     await sendScore(acct);
   } catch (e) { rkMsg('サーバーにつながりませんでした。少ししてからもう一度', 'bad'); }
 }
+function scoreBody(acct) {
+  return { name: acct.name, token: acct.token, score: G.score, stage: G.stage + 1,
+           character: G.char.name + '(Web)', clear: G.lastKind === 'all' || G.lastKind === 'daily', date: nowStamp(),
+           mode: modeKey(), title: G.save.title || '' };
+}
+// 途中でやめたとき(キャラ選択へ・ページを閉じる)も、そこまでのスコアをランキングに送る
+// (前は結果画面でしか送っていなかったので、タイムアタックには載るのに通常ランキングに載らないことがあった)
+function sendScoreQuiet(keepalive = false) {
+  if (!G.acct || G.submitted || !(G.score > 0) || !G.char) return;
+  G.submitted = true; G.lastKind = 'quit';
+  gasPost(scoreBody(G.acct), keepalive).then(() => Object.keys(rkCache).forEach(k => delete rkCache[k])).catch(() => {});
+}
 async function sendScore(acct) {
   if (G.submitted) return;
-  rkMsg('送信中…');
-  const b = $('rkSend') || $('rkLogin'); if (b) b.disabled = true;
+  G.submitted = true;                         // 同じプレイを2回送らない
+  const run = G.runId;
+  const body = scoreBody(acct);
+  const here = () => run === G.runId && G.mode === 'result';      // まだその結果画面にいる?
+  const msg = (t, k) => { if (here()) rkMsg(t, k); };
+  msg('送信中…');
   try { await saveBusy; } catch (e) {}      // 称号などのセーブを先にサーバーに届けてから
   try {
-    const res = await gasPost({ name: acct.name, token: acct.token, score: G.score, stage: G.stage + 1,
-                                character: G.char.name + '(Web)', clear: G.lastKind === 'all' || G.lastKind === 'daily', date: nowStamp(),
-                                mode: modeKey(), title: G.save.title || '' });
+    const res = await gasPost(body);
     if (res.ok) {
-      G.submitted = true;
+      Object.keys(rkCache).forEach(k => delete rkCache[k]);
+      if (!here()) return;
       $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位(${res.total}人中)</p>
         <button class="linky" id="rkView">ランキングを見る</button>`;
       $('rkView').onclick = () => openRanking();
-      Object.keys(rkCache).forEach(k => delete rkCache[k]);
     } else if (res.error === 'not owner') {
-      store.set('acct', null); rkMsg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
-    } else { rkMsg('登録できませんでした:' + errText(res.error), 'bad'); if (b) b.disabled = false; }
-  } catch (e) { rkMsg('サーバーにつながりませんでした。少ししてからもう一度', 'bad'); if (b) b.disabled = false; }
+      store.set('acct', null); msg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
+    } else msg('登録できませんでした:' + errText(res.error), 'bad');
+  } catch (e) { msg('サーバーにつながりませんでした', 'bad'); }
 }
 
 // ---------------- ログインとセーブ(どの端末からでも続きから) ----------------
@@ -2034,6 +2062,7 @@ async function doLogin() {
   lgMsg('確認中…'); $('lgGo').disabled = true;
   try {
     const res = await gasPost({ action: 'auth', name, pass });
+    if (G.mode !== 'login') return;          // 返事を待つ間にゲストなどで始めていた
     if (!res.ok) return lgMsg(errText(res.error), 'bad');
     startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`, !!res.created);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
@@ -2044,6 +2073,7 @@ async function continueLogin() {
   lgMsg('読み込み中…'); $('lgContinue').disabled = true;
   try {
     const res = await gasPost({ action: 'load', name: acct.name, token: acct.token });
+    if (G.mode !== 'login') return;
     if (res.ok) startWith(acct, res.save, `おかえりなさい、${acct.name}!`);
     else { store.set('acct', null); openLogin(true); lgMsg('もう一度パスワードを入れてね', 'bad'); }
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
@@ -2125,7 +2155,7 @@ async function flushLogs() {
     }
   } finally { flushingLogs = false; }
 }
-addEventListener('pagehide', () => { if (G.log) endLog('quit'); });
+addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
 let gachaBusy = false, gachaFrom = 'run';
@@ -2139,7 +2169,7 @@ function openGacha(title, from = 'run') {
   $('gcTitle').textContent = title || '社内ガシャ';
   $('gcPrize').innerHTML = '&nbsp;'; $('gcCap').className = 'cap';
   refreshGacha(); setMode('gacha');
-  setTimeout(() => $('gcSpin').focus(), 60);
+  setTimeout(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }, 60);
 }
 function refreshGacha() {
   $('gcInfo').textContent = gachaFrom === 'menu' ? `所持 ${G.doru}どる ・ AI ${G.ammo} ・ 課金パワー ${G.special} ・ 着せ替え ${G.save.items.length}/${ITEMS.length}`
@@ -2276,8 +2306,8 @@ async function loadRank() {
     rkCache[key] = { t: Date.now(), res }; draw(res);
   } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
-document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.onclick = () => setRankTab(b.dataset.t));
-document.querySelectorAll('#rkStages [data-s]').forEach(b => b.onclick = () => setRankTab('time', Number(b.dataset.s)));
+document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.onclick = () => { setRankTab(b.dataset.t); b.blur(); });
+document.querySelectorAll('#rkStages [data-s]').forEach(b => b.onclick = () => { setRankTab('time', Number(b.dataset.s)); b.blur(); });
 function closeRanking() { if (rankFrom === 'charsel') openCharsel(); else setMode(rankFrom === 'result' ? 'result' : 'title'); }
 function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 $('openRankTitle').onclick = openRanking;
@@ -2540,7 +2570,7 @@ $('lkTabI').onclick = () => { lkTab = 'items'; renderLocker(); };
 $('lkGacha').onclick = () => openGacha('社内ガシャ', 'menu');
 $('lkClose').onclick = () => openCharsel();
 $('csLocker').onclick = () => openLocker();
-document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => setSelMode(b.dataset.m));
+document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => { setSelMode(b.dataset.m); b.blur(); });
 
 // ダブルタップ・ピンチで拡大しない(iPhone の Safari は viewport の指定だけでは止まらないため)
 document.addEventListener('gesturestart', e => e.preventDefault());
