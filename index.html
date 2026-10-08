@@ -220,6 +220,16 @@ body.touch .kh { display: none; }
 .rank-box .msg.good { color: var(--green); }
 .rank-box .linky { background: none; border: 0; padding: 4px 0; color: var(--ink); text-decoration: underline; font-size: 13px; font-weight: 700; }
 .rank-note { font-size: 13px; opacity: .75; }
+.intro { max-width: 640px; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; }
+.intro-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; opacity: .7; margin: 0 0 4px !important; }
+.intro-body { min-height: 13.5em; font-size: 15px; line-height: 1.75; }
+.intro-body p { margin: 0 0 10px; }
+.intro-body ul { margin: 0; padding-left: 1.2em; }
+.intro-body li { margin: 2px 0; }
+.intro-body .ch { border-top: 1px solid var(--line); padding: 6px 0; }
+.intro-body .ch b { font-size: 16px; } .intro-body .ch .mult { color: var(--vermilion); font-weight: 800; }
+.intro .linky { background: none; border: 0; color: var(--ink); text-decoration: underline; font-weight: 700; font-size: 14px; margin-left: auto; }
+@media (max-height: 480px) { .intro { padding: 12px 20px; } .intro h2 { font-size: 20px; margin: 0 0 4px; } .intro-body { min-height: 0; font-size: 13px; line-height: 1.5; } .intro-body p { margin: 0 0 6px; } .intro-body .ch { padding: 3px 0; } .intro .row { margin-top: 6px; } }
 .rank-list { margin: 8px 0 0; padding: 0; list-style: none; max-height: 52vh; overflow-y: auto; }
 .rank-list li { display: grid; grid-template-columns: 2.4em 1fr auto; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
 .rank-list li b { font-variant-numeric: tabular-nums; }
@@ -294,6 +304,8 @@ body.touch .kh { display: none; }
     <div class="cards" id="cards"></div>
     <div class="cs-stage"><button class="btn" id="stPrev" aria-label="前のステージ">◀</button><span id="stName"></span><button class="btn" id="stNext" aria-label="次のステージ">▶</button></div>
     <div class="sheet-actions">
+      <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
+      <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
       <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
       <button class="btn primary" id="startGame">この人で出勤する</button>
     </div>
@@ -367,6 +379,20 @@ body.touch .kh { display: none; }
     <div class="row">
       <button class="btn primary" id="rNext">次へ</button>
       <button class="btn" id="rMenu">キャラ選択へ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ストーリー・あそびかた(はじめてのとき自動で出る) -->
+<section id="intro" class="screen dim hidden" aria-label="ストーリーとあそびかた">
+  <div class="panel intro">
+    <p class="intro-top"><span>あそびかた</span><span id="inPage">1 / 5</span></p>
+    <h2 id="inTitle">ストーリー</h2>
+    <div class="intro-body" id="inBody"></div>
+    <div class="row">
+      <button class="btn" id="inPrev">◀ 前へ</button>
+      <button class="btn primary" id="inNext">次へ ▶</button>
+      <button class="linky" id="inSkip">とばす</button>
     </div>
   </div>
 </section>
@@ -1447,7 +1473,13 @@ window.addEventListener('keydown', e => {
   } else if (G.mode === 'gacha') {
     if (k === ' ') { e.preventDefault(); spinGacha(); }
     if (k === 'Enter') { e.preventDefault(); gachaNext(); }
+  } else if (G.mode === 'intro') {
+    if (k === 'ArrowRight' || k === 'd' || k === 'Enter' || k === ' ') { e.preventDefault(); turnIntro(1); }
+    if (k === 'ArrowLeft' || k === 'a') turnIntro(-1);
+    if (k === 'Escape') closeIntro();
   } else if (G.mode === 'charsel') {
+    if (k === 'l') openRanking();
+    if (k === 'h') openIntro(() => openCharsel());
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
     if (k === 'ArrowUp' || k === 'w') { e.preventDefault(); if (G.startStage < G.save.unlocked - 1) moveStage(1); }
@@ -1574,6 +1606,7 @@ function setMode(m) {
   $('pause').classList.toggle('hidden', m !== 'pause');
   $('result').classList.toggle('hidden', m !== 'result');
   $('ranking').classList.toggle('hidden', m !== 'ranking');
+  $('intro').classList.toggle('hidden', m !== 'intro');
   const inGame = ['play', 'pause', 'result'].includes(m);
   $('hud').classList.toggle('hidden', !inGame);
   $('touch').classList.toggle('hidden', !(m === 'play' && G.device === 'touch'));
@@ -1824,9 +1857,17 @@ function openLogin(forceForm = false) {
   setMode('login');
   setTimeout(() => (quick ? $('lgContinue') : $('lgName')).focus(), 60);
 }
-function startWith(acct, save, msg) {
+function startWith(acct, save, msg, created = false) {
   G.acct = acct; G.save = Object.assign({}, DEFAULT_SAVE, save || {});
+  // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
+  if (created || !store.get('introSeen', false)) {
+    G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;
+    if (acct) store.set('acct', acct);
+    flushLogs();
+    return openIntro(() => { openCharsel(); if (msg) toast(msg); });
+  }
   if (acct) store.set('acct', acct);
+  flushLogs();                                                  // 前に送れなかったログがあれば送る
   G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;   // ログインした人は続きから、ゲストは1面から
   openCharsel(); if (msg) toast(msg);
 }
@@ -1838,7 +1879,7 @@ async function doLogin() {
   try {
     const res = await gasPost({ action: 'auth', name, pass });
     if (!res.ok) return lgMsg(errText(res.error), 'bad');
-    startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`);
+    startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`, !!res.created);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgGo').disabled = false; }
 }
@@ -1870,7 +1911,13 @@ function persist() {
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
     if (!res.ok && res.error === 'not owner') { toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); }
-  }).catch(() => toast('保存できませんでした\n(通信を確認してね)', true)));
+    else if (!res.ok && res.error === 'busy') retrySave();      // 混んでいた → 少しあとでもう一度
+  }).catch(() => retrySave()));
+}
+let saveRetry = null;
+function retrySave() {
+  if (saveRetry) return;
+  saveRetry = setTimeout(() => { saveRetry = null; persist(); }, 10000);   // 10秒後に、そのときの最新の状態を送る
 }
 
 // ---------------- プレイログ(研究・ゲームの改善用。ステージを1回遊ぶごとに1件) ----------------
@@ -1888,7 +1935,31 @@ function endLog(result) {
     score: G.score - L.score0,
   };
   if (G.acct) { body.name = G.acct.name; body.token = G.acct.token; }
-  gasPost(body, true).catch(() => {});
+  sendLog(body);
+}
+// 送れなかったログはブラウザに取っておいて、次につながったときに送る(卒研のデータが抜けないように)
+const MAX_PENDING_LOGS = 200;
+function pendingLogs() { return store.get('pendingLogs', []); }
+function keepLog(body) { const q = pendingLogs(); q.push(body); store.set('pendingLogs', q.slice(-MAX_PENDING_LOGS)); }
+function sendLog(body) {
+  gasPost(body, true).then(res => {
+    if (res.ok) flushLogs();
+    else if (res.error === 'busy') keepLog(body);              // 混んでいた → あとで
+  }).catch(() => keepLog(body));                              // つながらなかった → あとで
+}
+let flushingLogs = false;
+async function flushLogs() {
+  if (flushingLogs || !pendingLogs().length) return;
+  flushingLogs = true;
+  try {
+    while (pendingLogs().length) {
+      const q = pendingLogs(), body = q[0];
+      let res;
+      try { res = await gasPost(body); } catch (e) { break; }  // つながらない → また今度
+      if (!res.ok && res.error === 'busy') break;               // 混んでいる → また今度
+      store.set('pendingLogs', pendingLogs().slice(1));         // 送れた(または断られた)ものは消す
+    }
+  } finally { flushingLogs = false; }
 }
 addEventListener('pagehide', () => { if (G.log) endLog('quit'); });
 
@@ -1925,6 +1996,60 @@ function gachaNext() { if (gachaBusy) return; buildStage(G.stage + 1); setMode('
 $('gcSpin').onclick = spinGacha;
 $('gcNext').onclick = gachaNext;
 
+// ---------------- ストーリー・あそびかた(PC版の「あそびかた」と同じ内容) ----------------
+function introPages() {
+  const ctl = G.device === 'touch'
+    ? '<ul><li>左のスティック … 移動(倒した方向に歩く)</li><li>右側をなぞる … 視点を回す</li><li>ジャンプ … 短く押すと小ジャンプ</li>' +
+      '<li>AI 投げる … 近くの敵を自動で追いかける</li><li>課金 … 必殺技(課金ブロックを叩くと出る)</li><li>視点もどす … キャラのうしろに視点を戻す</li><li>II … 一時停止</li></ul>'
+    : '<ul><li>W A S D … 移動(A・Dは横歩き)</li><li>← → … 向きを変える   ↑ ↓ … 視点を上下</li><li>スペース … ジャンプ(短く押すと小ジャンプ)</li>' +
+      '<li>F / クリック … AIを投げる</li><li>E … 必殺技「課金パワー」</li><li>H / Esc … 一時停止・あそびかた</li><li>R … この面をやり直す</li></ul>';
+  const screens = G.device === 'touch'
+    ? '<ul><li>【ログイン】ニックネームとパスワード(本名はNG)。はじめてのニックネームはそのまま登録</li>' +
+      '<li>【キャラ選択】キャラをタップ、◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
+    : '<ul><li>【ログイン】ニックネームとパスワード(本名はNG) → Enter / Esc でゲスト</li>' +
+      '<li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    L ランキング、H あそびかた、N ニックネーム変更</li>' +
+      '<li>【ガシャ】スペース 回す(100どる)、Enter 次へ</li><li>【エンディング】Enter でとばす</li></ul>';
+  const chars = CHARS.slice().sort((a, b) => a.score - b.score).map(c =>
+    `<div class="ch"><b>${c.name}</b>(スコア <span class="mult">×${c.score}</span>)… ${c.role}<br>${c.desc}</div>`).join('');
+  return [
+    ['ストーリー', '<p>きみは今年入社したばかりの新社会人。<br>課題、レポート、締切……仕事は次から次へとやってくる。</p>' +
+      '<p>頼れる相棒は、なんでも手伝ってくれる「AI」。<br>でもAIは、たまにハルシネーション(かんちがい)するし、<br>使いすぎるとレート制限で休けいしてしまう。</p>' +
+      '<p>AIとうまく付き合いながら仕事を片付けて、<br>今日こそ 17:30 に定時退社しよう!</p>'],
+    ['ルール', '<ul><li>ステージのおくの「退勤」ドアに入ればクリア</li><li>敵(仕事)は、AIを投げるか、上から踏んで倒す(踏むとスコア2倍!)</li>' +
+      '<li>ボスを倒さないと、退勤ドアは開かない。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返す</li>' +
+      '<li>AIには残りの数がある(右上)。0になると投げられない</li><li>?ブロック:AIが増える(コーヒーなら3方向投げも)</li>' +
+      '<li>休暇ブロック:ライフ+1 / 課金ブロック:必殺技</li><li>黄色い線の外は穴。落ちるとミス</li><li>クリアでもらえる「どる」でガシャを回そう</li></ul>'],
+    ['ゲーム中の操作', ctl],
+    ['画面ごとの操作', screens],
+    ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
+  ];
+}
+let introPage = 0, introDone = null;
+function openIntro(onDone, page = 0) {
+  introDone = onDone; introPage = page; showIntroPage(); setMode('intro');
+  setTimeout(() => $('inNext').focus(), 60);
+}
+function showIntroPage() {
+  const pages = introPages(), [title, body] = pages[introPage], last = introPage === pages.length - 1;
+  $('inTitle').textContent = title; $('inBody').innerHTML = body;
+  $('inPage').textContent = `${introPage + 1} / ${pages.length}`;
+  $('inPrev').disabled = introPage === 0;
+  $('inNext').innerHTML = last ? 'はじめる' : '次へ ▶';
+  $('inSkip').classList.toggle('hidden', last);
+}
+function turnIntro(d) {
+  const n = introPages().length, to = introPage + d;
+  if (to >= n) return closeIntro();
+  if (to < 0) return;
+  introPage = to; showIntroPage(); tone(900, 900, 0.04, 'sine', 0.08);
+}
+function closeIntro() { store.set('introSeen', true); const cb = introDone; introDone = null; if (cb) cb(); }
+$('inPrev').onclick = () => turnIntro(-1);
+$('inNext').onclick = () => turnIntro(1);
+$('inSkip').onclick = closeIntro;
+$('csHelp').onclick = () => openIntro(() => openCharsel());
+$('csRank').onclick = () => openRanking();
+
 // ランキング画面
 let rankFrom = 'title';
 async function openRanking() {
@@ -1939,7 +2064,7 @@ async function openRanking() {
       : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
   } catch (e) { list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
-function closeRanking() { setMode(rankFrom === 'result' ? 'result' : 'title'); }
+function closeRanking() { if (rankFrom === 'charsel') openCharsel(); else setMode(rankFrom === 'result' ? 'result' : 'title'); }
 function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 $('openRankTitle').onclick = openRanking;
 $('closeRank').onclick = closeRanking;
