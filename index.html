@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<title>新社会人AIクエスト</title>
+<title>新社会人AIクエスト(Web試作版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1p:wght@500;700;800&display=swap" rel="stylesheet">
@@ -263,6 +263,11 @@ body.touch .kh { display: none; }
 .bonus b { font-variant-numeric: tabular-nums; }
 .bonus .tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; font-weight: 800; color: var(--vermilion); }
 .locker { max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+.news-new { display: inline-block; font-size: 10px; font-weight: 800; background: #d63a3a; color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 6px; vertical-align: 2px; }
+.news-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; max-height: 58vh; border-top: 1px solid var(--line); text-align: left; }
+.news-body h3 { font-size: 16px; margin: 14px 0 4px; }
+.news-body h3 small { font-size: 12px; opacity: .6; margin-right: 8px; font-weight: 700; }
+.news-body ul { margin: 0 0 6px; padding-left: 1.3em; font-size: 14px; line-height: 1.7; }
 .lk-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; max-height: 50vh; border-top: 1px solid var(--line); }
 .lk-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
 .lk-item small { display: block; opacity: .7; font-size: 12px; font-weight: 600; }
@@ -360,6 +365,7 @@ body.touch .kh { display: none; }
       <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
       <button class="btn ghost" id="csLocker">ガシャ・称号<span class="kh"> [G]</span></button>
       <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
+      <button class="btn ghost" id="csNews">お知らせ<span id="csNewsNew" class="news-new hidden">NEW</span><span class="kh"> [I]</span></button>
       <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
       <button class="btn primary" id="startGame">この人で出勤する</button>
     </div>
@@ -462,6 +468,15 @@ body.touch .kh { display: none; }
     <p class="rank-note" id="rkNote">PC版(exe)とWeb版、みんなの自己ベスト</p>
     <ol id="rankList" class="rank-list"></ol>
     <div class="row"><button class="btn primary" id="closeRank">もどる</button></div>
+  </div>
+</section>
+
+<!-- お知らせ(アップデート情報) -->
+<section id="news" class="screen dim hidden" aria-label="お知らせ">
+  <div class="panel locker">
+    <h2>お知らせ</h2>
+    <div class="news-body" id="newsBody"></div>
+    <div class="row"><button class="btn primary" id="closeNews">もどる<span class="kh"> [Enter]</span></button></div>
   </div>
 </section>
 
@@ -574,11 +589,11 @@ const LABEL_COLORS = {
   '炎上案件': ['#ffd2b4', '#b42800'], '社長の\n無茶ぶり': ['#ffe1e1', '#8c0000'],
 };
 const CHARS = [
-  { name: '新人', role: 'やる気だけはある新社会人', desc: 'バランス型。AIを信じてなんでも投げる!', speed: 1.0, jump: 1.0, shots: 2, hallu: 1.0, score: 1.5,
+  { name: '新人', role: 'やる気だけはある新社会人', desc: 'バランス型。AIを信じてなんでも投げる!', speed: 1.0, jump: 0.97, jstar: 2, shots: 2, hallu: 1.0, score: 1.5,
     look: { suit: '#2b2f3a', tie: '#c0392b', hair: '#1a1a1a', style: 'short', bag: true } },
-  { name: '先輩', role: '頼れる3年目', desc: '足が速くてジャンプも得意。AIの使い方も上手。', speed: 1.2, jump: 1.1, shots: 3, hallu: 0.7, score: 1.0,
+  { name: '先輩', role: '頼れる3年目', desc: '足が速くてジャンプも得意。AIの使い方も上手。', speed: 1.2, jump: 1.12, jstar: 4, shots: 3, hallu: 0.7, score: 1.0,
     look: { suit: '#3b4a6b', tie: null, hair: '#4a2f1d', style: 'long', bag: false } },
-  { name: '上司', role: '決裁権を持つ男', desc: '足は遅いけど、AIのウソを見抜いて一度に5つ投げる。', speed: 0.8, jump: 0.85, shots: 5, hallu: 0.3, score: 1.2,
+  { name: '上司', role: '決裁権を持つ男', desc: '足は遅いけど、AIのウソを見抜いて一度に5つ投げる。', speed: 0.8, jump: 1.03, jstar: 3, shots: 5, hallu: 0.3, score: 1.2,
     look: { suit: '#5a5f69', tie: '#1f4e9c', hair: '#666666', style: 'bald', bag: true, glasses: true, mustache: true } },
 ];
 
@@ -753,7 +768,7 @@ function bgmPlay(name, mul = 1) {
 function bgmStop() { BGM.name = null; BGM.song = null; if (BGM.timer) { clearInterval(BGM.timer); BGM.timer = null; } }
 function nearBoss() {
   const b = G.enemies && G.enemies.find(e => e.boss && !e.dead);
-  return !!b && Math.hypot(G.player.x - b.start.x, G.player.z - b.start.z) < b.arena + 10;
+  return !!b && (b.engaged || Math.hypot(G.player.x - b.start.x, G.player.z - b.start.z) < b.arena + 10);
 }
 // 場面に合わせて曲を変える(毎フレーム呼んでも、同じ曲なら何もしない)
 function bgmScene() {
@@ -1004,6 +1019,8 @@ function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
   G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = 0; G.grounded = false;
   G.inv = full ? 0 : 2; G.safe = 0; G.run = 0;
+  // 残業モードで追いかけてきたボスは、ミスしたら持ち場にもどる(復活地点で待ちぶせしないように)
+  for (const e of G.enemies || []) if (e.boss && e.engaged && !e.dead) { e.engaged = false; e.calm = true; e.mesh.position.copy(e.start); }
 }
 
 // ---------------- 当たり判定(箱どうし) ----------------
@@ -1107,14 +1124,45 @@ function updateItems(dt) {
 }
 
 // ---------------- 敵 ----------------
+// ボスが立っている足場(残業モードで、この上ならどこまでも追いかけてくる)
+function bossFloor(e) {
+  if (e.floor !== undefined) return e.floor;
+  const bottom = e.start.y - e.size / 2;
+  e.floor = G.solids.find(b => !b.mover && Math.abs(b.maxY - bottom) < 0.3 &&
+    e.start.x >= b.minX && e.start.x <= b.maxX && e.start.z >= b.minZ && e.start.z <= b.maxZ) || null;
+  return e.floor;
+}
+function bossBlocked(e, fl, x, z) {
+  const half = e.size / 2, bottom = (fl ? fl.maxY : e.start.y - half) + 0.3, top = e.start.y + half;
+  return G.solids.some(b => b !== fl && !b.mover && b.maxY > bottom && b.minY < bottom + 0.5 && b.minY < top &&
+    x + half > b.minX && x - half < b.maxX && z + half > b.minZ && z - half < b.maxZ);
+}
 function updateEnemies(dt) {
   const p = G.player;
   for (const e of G.enemies.slice()) {
     if (e.dead) continue;
     const m = e.mesh;
-    if (e.boss || e.chase) {
+    if (e.boss && G.playMode === 'overtime') {
+      // 残業モード:一度見つかったら、ボスは自分の足場の上ならどこまでも追いかけてくる
+      const fl = bossFloor(e), half = e.size / 2;
+      if (!e.engaged && Math.hypot(p.x - e.start.x, p.z - e.start.z) < e.arena + (e.calm ? 0 : 6)) e.engaged = true;   // ミスのあとは近くまで来ないと追わない
+      var near = e.engaged;
+      const tx = near ? p.x : e.start.x, tz = near ? p.z : e.start.z, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+      if (d > 0.1) {
+        const clampX = x => fl ? Math.max(fl.minX + half, Math.min(fl.maxX - half, x)) : x;
+        const clampZ = z => fl ? Math.max(fl.minZ + half, Math.min(fl.maxZ - half, z)) : z;
+        const nx = clampX(m.position.x + dx / d * e.speed * dt), nz = clampZ(m.position.z + dz / d * e.speed * dt);
+        if (!bossBlocked(e, fl, nx, m.position.z)) m.position.x = nx;   // 机などにはめりこまない
+        if (!bossBlocked(e, fl, m.position.x, nz)) m.position.z = nz;
+      }
+      if (e.bar) { e.bar.position.set(m.position.x, m.position.y + e.size / 2 + 0.8, m.position.z); e.bar.quaternion.copy(camera.quaternion); }
+      if (e.shoot && near && Math.hypot(p.x - m.position.x, p.z - m.position.z) < 22) { e.shootT -= dt; if (e.shootT <= 0) { e.shootT = e.shoot; bossShoot(e); } }
+      const guarding = G.now < e.guardUntil;
+      if (guarding && !e.guardMesh) { e.guardMesh = box(e.size + 0.5, e.size + 0.5, e.size + 0.5, new THREE.MeshBasicMaterial({ color: 0x56B4E9, transparent: true, opacity: 0.35 })); scene.add(e.guardMesh); }
+      if (e.guardMesh) { e.guardMesh.position.copy(m.position); e.guardMesh.visible = guarding; }
+    } else if (e.boss || e.chase) {
       const arena = e.boss ? e.arena : e.chase;
-      const near = Math.hypot(p.x - e.start.x, p.z - e.start.z) < arena + 6;
+      var near = Math.hypot(p.x - e.start.x, p.z - e.start.z) < arena + 6;
       const tx = near ? p.x : e.start.x, tz = near ? p.z : e.start.z, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
       if (d > 0.1) { m.position.x += dx / d * e.speed * dt; m.position.z += dz / d * e.speed * dt; }
       const ox = m.position.x - e.start.x, oz = m.position.z - e.start.z, od = Math.hypot(ox, oz);
@@ -1138,7 +1186,7 @@ function updateEnemies(dt) {
     const half = e.size / 2;
     if (Math.abs(p.x - m.position.x) < half + 0.45 && Math.abs(p.z - m.position.z) < half + 0.45 &&
         p.y < m.position.y + half && p.y + HEIGHT > m.position.y - half) {
-      if (G.vy < 0 && p.y > m.position.y + half - 0.7) { if (!e.boss) onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
+      if (G.vy < 0 && p.y > m.position.y + half - Math.max(0.7, half * 0.6)) { if (!e.boss) onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
       else hurt(e.label.replace('\n', ''));
     }
   }
@@ -1450,7 +1498,7 @@ function updateDroppers(dt) {
 }
 function updateCheckpoints() {
   const p = G.player;
-  for (const c of G.checkpoints) if (!c.done && p.z >= c.pos.z && Math.abs(p.y - c.pos.y) < 3) {
+  for (const c of G.checkpoints) if (!c.done && p.z >= c.pos.z && p.y > c.pos.y - 0.5 && p.y < c.pos.y + 3) {
     c.done = true; G.respawnPt = c.pos.clone(); c.flag.material = lam('#009E73'); sfx.coin(); toast('チェックポイント!\nここから再スタートできる');
   }
 }
@@ -1595,6 +1643,7 @@ window.addEventListener('keydown', e => {
   } else if (G.mode === 'charsel') {
     if (k === 'l') openRanking();
     if (k === 'g') openLocker();
+    if (k === 'i') openNews();
     if (k === 'm') { const ms = ['normal', 'overtime', 'daily'].filter(m => m !== 'overtime' || overtimeOpen()); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
     if (k === 'h') openIntro(() => openCharsel());
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
@@ -1604,6 +1653,8 @@ window.addEventListener('keydown', e => {
     if (k === 'n') openLogin(true);
     if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
     if (k === 'Escape') openLogin(true);
+  } else if (G.mode === 'news') {
+    if (k === 'Escape' || k === 'Enter' || k === 'i') { e.preventDefault(); openCharsel(); }
   } else if (G.mode === 'locker') {
     if (k === 'Escape') openCharsel();
     if (k === 'ArrowLeft' || k === 'ArrowRight') { lkTab = lkTab === 'titles' ? 'items' : 'titles'; renderLocker(); }
@@ -1749,6 +1800,7 @@ function setMode(m) {
   $('ranking').classList.toggle('hidden', m !== 'ranking');
   $('intro').classList.toggle('hidden', m !== 'intro');
   $('locker').classList.toggle('hidden', m !== 'locker');
+  $('news').classList.toggle('hidden', m !== 'news');
   const inGame = ['play', 'pause', 'result'].includes(m);
   $('hud').classList.toggle('hidden', !inGame);
   $('touch').classList.toggle('hidden', !(m === 'play' && G.device === 'touch'));
@@ -1810,7 +1862,7 @@ function openCharsel() {
     b.setAttribute('aria-pressed', String(i === picked));
     b.innerHTML = `<b>${c.name}</b><span class="role">${c.role}</span><span class="desc">${c.desc}</span>
       <div class="stats"><div><span>スピード</span><span>${stars(c.speed * 3)}</span></div>
-      <div><span>ジャンプ</span><span>${stars(c.jump * 3)}</span></div>
+      <div><span>ジャンプ</span><span>${stars(c.jstar || c.jump * 3)}</span></div>
       <div><span>AI精度</span><span>${stars(3 + (1 - c.hallu) * 3)}</span></div>
       <div><span>AIを続けて投げられる数</span><span>${c.shots}個</span></div>
       <div><span>スコア倍率</span><span class="mult">×${c.score}</span></div></div>`;
@@ -1818,6 +1870,7 @@ function openCharsel() {
     b.ondblclick = () => { picked = i; startRun(CHARS[picked]); };
     wrap.appendChild(b);
   });
+  try { refreshNewsBadge(); } catch (e) { /* 読みこみ途中 */ }
   setMode('charsel');
   for (const c of CHARS) preloadVoices(c.name, ['select']);
   setPicked(G.save.character || 0, true); refreshCharsel();
@@ -1830,7 +1883,7 @@ function refreshCharsel() {
   document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); });
   const note = $('csModeNote');
   $('csStage').classList.toggle('hidden', G.selMode !== 'normal'); note.classList.toggle('hidden', G.selMode === 'normal');
-  if (G.selMode === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
+  if (G.selMode === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・ボスがどこまでも追ってくる・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
   if (G.selMode === 'daily') note.textContent = `今日のお題:${dailyText()}(キャラは固定)`;
   G.startStage = Math.max(0, Math.min(G.startStage, sv.unlocked - 1));
   $('stName').textContent = `スタート:ステージ${G.startStage + 1} ${STAGES[G.startStage].name}`;
@@ -1895,7 +1948,7 @@ function retryStage() {
   endLog('retry'); G.score = G.stageScore0 || 0;
   const lives = Math.min(G.lives, G.stageLives0 || G.lives);
   G.ammo = G.stageAmmo0 ?? G.ammo; G.special = G.stageSpecial0 ?? G.special;
-  buildStage(G.stage); G.lives = lives; updateHud();
+  G.lives = lives; buildStage(G.stage); G.lives = lives; updateHud();
 }
 
 $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
@@ -2256,8 +2309,11 @@ function spinGacha() {
   $('gcPrize').innerHTML = '&nbsp;';
   setTimeout(() => {
     cap.className = 'cap open';
-    G.ammo += prize.ai; G.lives = Math.min(9, G.lives + prize.life); G.special += prize.special;
-    $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}`;
+    const keep = gachaFrom !== 'menu' && G.playMode !== 'normal' && (prize.ai || prize.special);
+    if (keep) { G.save.ammo += prize.ai; G.save.special += prize.special; }    // 残業・お題中は通常モードに持ち越し
+    else { G.ammo += prize.ai; G.special += prize.special; }
+    G.lives = Math.min(9, G.lives + prize.life);
+    $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}` + (keep ? '<br><small>(通常モードに持ち越し)</small>' : '');
     (prize.special ? sfx.power : prize.life ? sfx.power : sfx.done)();
     gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu' ? 'menu' : 'play');
   }, 950);
@@ -2292,7 +2348,7 @@ function introPages() {
     ['スコアの稼ぎ方', '<ul><li>敵:AIで倒すと100点、踏むと200点</li><li><b>コンボ</b>:着地しないで続けて踏むと 200→400→800→1000点</li>' +
       '<li><b>社員証</b>:各ステージに3枚かくれている(1枚500点)</li><li>クリアすると<b>ボーナス</b>:定時(速いほど・最大2000)/ノーミス 1000/AI節約(投げないほど・最大1000)/全員たおした 500</li>' +
       '<li>キャラのスコア倍率(新人×1.5など)は全部にかかる</li></ul><p>速さ・全部回る・AIを使わない、ぜんぶ同時には取れない。どれをねらう?</p>'],
-    ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬いけど、スコアとどるが×1.5。ランキングも別</li>' +
+    ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬く、ボスは足場の上をどこまでも追いかけてくる。そのかわりスコアとどるが×1.5。ランキングも別</li>' +
       '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li>' +
       '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。キャラ選択の「ガシャ・称号」でつけかえ</li></ul>'],
     ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
@@ -2525,7 +2581,7 @@ function allCleared() {
 function finishDaily() {
   award('daily');
   const day = Number(G.daily.day);
-  if (G.save.dailyDay !== day) { G.save.dailyDay = day; G.doru += BONUS.daily; G.lastBonus.dol = BONUS.daily; }
+  if (day > (Number(G.save.dailyDay) || 0)) { G.save.dailyDay = day; G.doru += BONUS.daily; G.lastBonus.dol = BONUS.daily; }
   if (G.score >= 30000) award('ace');
   persist(); showResult('daily');
 }
@@ -2645,6 +2701,45 @@ $('lkTabI').onclick = () => { lkTab = 'items'; renderLocker(); };
 $('lkGacha').onclick = () => openGacha('社内ガシャ', 'menu');
 $('lkClose').onclick = () => openCharsel();
 $('csLocker').onclick = () => openLocker();
+
+// ---------------- お知らせ(アップデート情報) ----------------
+// 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
+// (PC版の news.py にも同じ内容を書く)
+const NEWS = [
+  { id: 3, date: '2026/10/09', title: '残業モードがもっと手ごわく', items: [
+    '残業モードのボスが、一度見つかると足場の上をどこまでも追いかけてくるようになりました(ミスすると持ち場にもどります)',
+    'ジャンプ力を見直しました:新人 ★2 ・上司 ★3 ・先輩 ★4。上司もダッシュジャンプで大きいボスを踏めるように',
+    '大きいボスが少し踏みやすくなりました',
+    '残業・今日のお題の途中のガシャで出た AI と課金パワーは、通常モードに持ち越されるようになりました',
+    '「お知らせ」画面をつくりました',
+    'やり直し(R)でライフが増えてしまう、残業でミスしたあとにボスが待ちぶせする、などの不具合を直しました',
+  ] },
+  { id: 2, date: '2026/10/09', title: 'PC版(exe)もWeb版と同じ内容に', items: [
+    'PC版でも、残業モード・今日のお題・タイムアタック・称号・着せ替え・社員証が遊べるようになりました',
+    'PC版とWeb版で、どる・称号・着せ替えなどが共通になります(同じニックネームでログイン)',
+  ] },
+  { id: 1, date: '2026/10/08', title: 'クリアしたあとも遊べる!', items: [
+    '残業モード:ステージ5まで進むと開く。敵が速くて硬いけど、スコアとどるが ×1.5',
+    '今日のお題:毎日かわるステージ・キャラ・しばりに挑戦。その日はじめてのクリアで +300どる',
+    'タイムアタック:ステージごとの最速クリアのランキング',
+    '称号(ランキングの名前の横に出る)・着せ替え(ガシャで出る)・社員証(各ステージに3枚かくれている)',
+    '踏みつけコンボ(着地しないで続けて踏むと点数アップ)と、クリアボーナス(タイム・ノーミス・AI節約・全員たおす)',
+    'ランキングに「通常・残業・今日のお題・タイム」のタブ。これまでのスコアはそのまま残っています',
+    'ダッシュ・ダッシュジャンプが使いやすく、?ブロックに影、床をうすく、ボスを倒したときに点滅しないように',
+    'キャラ選択からランキングが見られるように。はじめてログインしたときはストーリーと遊び方が出ます',
+    'スマホ・iPad のボタンの大きさを調整しました(Web版)',
+  ] },
+];
+function newsUnread() { return NEWS.length && NEWS[0].id > (Number(store.get('newsSeen', 0)) || 0); }
+function refreshNewsBadge() { $('csNewsNew').classList.toggle('hidden', !newsUnread()); }
+function openNews() {
+  $('newsBody').innerHTML = NEWS.map(n => `<h3><small>${n.date}</small>${escapeHtml(n.title)}</h3><ul>${n.items.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`).join('');
+  $('newsBody').scrollTop = 0;
+  if (NEWS.length) store.set('newsSeen', NEWS[0].id);
+  refreshNewsBadge(); setMode('news');
+}
+$('csNews').onclick = () => openNews();
+$('closeNews').onclick = () => openCharsel();
 document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => { setSelMode(b.dataset.m); b.blur(); });
 
 // ダブルタップ・ピンチで拡大しない(iPhone の Safari は viewport の指定だけでは止まらないため)
