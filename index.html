@@ -1642,6 +1642,8 @@ window.addEventListener('keydown', e => {
     return;
   }
   const k = keyOf(e);
+  // 押しっぱなしのキーで、出てきたばかりのボタンが押されないように(ゲームオーバー直後にすぐ再スタートしない)
+  if (e.repeat && e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) { e.preventDefault(); return; }
   // メニューでボタンにフォーカスがあるときの Enter / スペースは、ボタンに任せる(2回動かないように)
   if (G.mode !== 'play' && G.mode !== 'gacha' && e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) return;
   if (G.mode === 'gacha' && (k === 'Enter' || k === ' ') && e.target && e.target.blur) { e.preventDefault(); e.target.blur(); }
@@ -1748,6 +1750,7 @@ canvas.addEventListener('pointermove', e => {
   look.x = e.clientX; look.y = e.clientY;
 });
 canvas.addEventListener('pointerup', e => { if (look && e.pointerId === look.id) look = null; });
+canvas.addEventListener('pointercancel', e => { if (look && e.pointerId === look.id) look = null; });
 
 // ---------------- 毎フレームの処理 ----------------
 function update(dt) {
@@ -2235,7 +2238,7 @@ $('lgName').addEventListener('enterkey', () => $('lgPass').focus());
 
 // 今の状態をセーブに入れて、ログインしていればサーバーに保存する
 let saveBusy = Promise.resolve();
-function persist(from = 'play') {
+function persist(from = 'play', keepalive = false) {
   const sv = G.save;
   // 'meta':称号・着せ替えだけ変えた(数字はさわらない) / 'menu':ロッカーのガシャ / 'play':プレイ中・プレイ後
   // 残業・お題は AI と課金パワーを持ち帰らない
@@ -2248,6 +2251,7 @@ function persist(from = 'play') {
   }
   if (!G.acct) return;
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
+  if (keepalive) { gasPost(body, true).catch(() => {}); return; }   // ページを閉じるときは、待たずにすぐ送る
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
     if (!res.ok && res.error === 'not owner') { if (G.acct) toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); G.acct = null; }
     else if (!res.ok && res.error === 'busy') retrySave(from);      // 混んでいた → 少しあとでもう一度
@@ -2302,13 +2306,13 @@ async function flushLogs() {
 }
 addEventListener('pageshow', e => {
   if (!e.persisted) return;
-  const inRun = ['play', 'pause', 'special'].includes(G.mode) || (G.mode === 'gacha' && gachaFrom === 'run');
+  const inRun = ['play', 'special'].includes(G.mode) || (G.mode === 'pause' && pauseReturn === 'play') || (G.mode === 'gacha' && gachaFrom === 'run');
   if (inRun) { G.submitted = false; if (G.mode !== 'gacha') { const t0 = G.st ? G.st.t0 : G.now; G.log = null; startLog(); G.log.t0 = t0; } }
   flushScores(); flushLogs();
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushScores(true); });
 addEventListener('pagehide', () => { if (gachaGrant) gachaGrant(); flushScores(true); });
-addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) sendScoreQuiet(true); });
+addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'gacha', 'special'].includes(G.mode) || (G.mode === 'pause' && pauseReturn === 'play')) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
 let gachaBusy = false, gachaFrom = 'run', gachaGrant = null;
@@ -2347,7 +2351,7 @@ function spinGacha() {
   cap.className = 'cap'; void cap.offsetWidth; cap.className = 'cap drop';
   $('gcPrize').innerHTML = '&nbsp;';
   let granted = false;
-  const grant = () => {   // 景品をもらう(演出の途中でページを閉じても、もらえるように)
+  const grant = (closing = false) => {   // 景品をもらう(演出の途中でページを閉じても、もらえるように)
     if (granted) return; granted = true; gachaGrant = null;
     // AI は「次の通常モードのステージで、配られる数に足す」(持っているだけだと、配られる数より少ないと意味がないので)
     if (prize.ai) G.save.bonusAi = (G.save.bonusAi || 0) + prize.ai;
@@ -2355,9 +2359,9 @@ function spinGacha() {
     if (keep) G.save.special += prize.special;    // 残業の途中の課金パワーは通常モードに持ち越し
     else G.special += prize.special;
     G.lives = Math.min(9, G.lives + prize.life);
-    persist(gachaFrom === 'menu' ? 'menu' : 'play');
+    persist(gachaFrom === 'menu' ? 'menu' : 'play', closing);
   };
-  gachaGrant = grant;
+  gachaGrant = () => grant(true);
   setTimeout(() => {
     cap.className = 'cap open';
     grant();
