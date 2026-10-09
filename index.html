@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<title>新社会人AIクエスト(Web試作版)</title>
+<title>新社会人AIクエスト</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1p:wght@500;700;800&display=swap" rel="stylesheet">
@@ -318,7 +318,7 @@ body.touch .kh { display: none; }
 <section id="title" class="screen" aria-label="タイトル">
   <div class="timecard">
     <div class="tc-head"><span>タイムカード / 新入社員</span><span class="tc-clock" id="tcClock">08:59</span></div>
-    <h1 class="logo"><small>Web試作版</small>新社会人<br>AIクエスト</h1>
+    <h1 class="logo">新社会人<br>AIクエスト</h1>
     <p class="tc-lead">課題や締切を、相棒のAIで片付けて、今日こそ定時に退勤しよう。</p>
     <div class="tc-rows">
       <button class="punch" id="goPC">PCで出勤する<small>キーボードとマウスで遊ぶ</small><span class="stamp">出勤</span></button>
@@ -501,8 +501,8 @@ body.touch .kh { display: none; }
 <script>
 'use strict';
 /* =====================================================================
-   新社会人AIクエスト Web試作版
-   ・Python版(Ursina)の 1〜2面を、Three.js で作り直したもの
+   新社会人AIクエスト Web版
+   ・Python版(Ursina)を、Three.js で作り直したもの
    ・PC(キーボード)とスマホ(タッチ)を選べる
    ===================================================================== */
 
@@ -969,8 +969,9 @@ function buildStage(i) {
   if (st.boss) spawnEnemy(st.boss, true);
   // プレイヤー
   G.ammo = stageAmmo(st, G.ammo);
-  const bonusAi = G.playMode === 'normal' ? (G.save.bonusAi || 0) : 0;
+  const bonusAi = G.playMode === 'normal' && !G.isBackdrop ? (G.save.bonusAi || 0) : 0;
   if (bonusAi > 0) { G.ammo += bonusAi; G.save.bonusAi = 0; }   // ガシャで出たAIは、配られる数に足す
+  G.stageBonus = bonusAi;   // やめたときに、使っていない分を返す用
   G.respawnPt = new THREE.Vector3(0, 0, 0);
   G.stageScore0 = G.score;            // やり直したときに戻すスコア
   G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
@@ -979,7 +980,7 @@ function buildStage(i) {
   if (i === STAGES.length - 1) preloadEndingVoices();
   spawnCards(i);
   startLog(); startStageStats();
-  if (bonusAi > 0) setTimeout(() => toast(`ガシャのAI +${bonusAi}!`), 1900);
+  if (bonusAi > 0) { const id = G.runId; setTimeout(() => { if (G.mode === 'play' && G.runId === id) toast(`ガシャのAI +${bonusAi}!`); }, 1900); }
   showBanner(G.playMode === 'overtime' ? `残業 STAGE ${i + 1}\n${st.name}` : G.playMode === 'daily' ? `今日のお題\n${G.daily.rule.name}` : `STAGE ${i + 1}\n${st.name}`, 1.8);
   updateHud();
 }
@@ -1962,6 +1963,12 @@ $('resume').onclick = closePause;
 $('retry').onclick = () => { setMode('play'); retryStage(); };
 function dropStagePickups() {   // クリアしていないステージで増えた分は持ち帰らない(使った分はそのまま減る)
   if (G.stageAmmo0 !== undefined) G.ammo = Math.min(G.ammo, G.stageAmmo0);
+  // ガシャで足したAIのうち、使っていない分は「次のステージで足す」にもどす(ふつうのAIから先に使ったことにする)
+  const sb = G.playMode === 'normal' ? (G.stageBonus || 0) : 0;
+  if (sb > 0 && G.stageAmmo0 !== undefined) {
+    const back = Math.max(0, Math.min(sb, G.ammo));   // ガシャの分は最後に使ったことにする
+    G.ammo -= back; G.save.bonusAi = (G.save.bonusAi || 0) + back; G.stageBonus = 0;
+  }
   if (G.stageSpecial0 !== undefined) G.special = Math.min(G.special, G.stageSpecial0);
 }
 $('toMenu').onclick = () => { endLog('quit'); dropStagePickups(); persist(); sendScoreQuiet(); openCharsel(); };
@@ -1978,7 +1985,7 @@ function retryStage() {
   endLog('retry'); G.score = G.stageScore0 || 0;
   const lives = Math.min(G.lives, G.stageLives0 || G.lives);
   G.ammo = G.stageAmmo0 ?? G.ammo; G.special = G.stageSpecial0 ?? G.special;
-  G.lives = lives; buildStage(G.stage); G.lives = lives; updateHud();
+  const sb = G.stageBonus; G.lives = lives; buildStage(G.stage); G.lives = lives; G.stageBonus = sb; updateHud();
 }
 
 $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
@@ -2014,7 +2021,7 @@ function showResult(kind) {
   } else {
     $('rTitle').textContent = '残業、確定…';
     $('rBody').textContent = `${STAGES[G.stage].name}でライフがなくなった。スコアは ${G.score}点。`;
-    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, G.playMode);
+    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => { const old = G.daily && G.daily.day; startRun(G.char, G.playMode); if (old && G.daily && G.daily.day !== old) toast('日付が変わったので\n新しいお題です'); };
   }
   setTimeout(() => $('rNext').focus(), 50);
 }
@@ -2300,11 +2307,11 @@ addEventListener('pageshow', e => {
   flushScores(); flushLogs();
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushScores(true); });
-addEventListener('pagehide', () => flushScores(true));
+addEventListener('pagehide', () => { if (gachaGrant) gachaGrant(); flushScores(true); });
 addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
-let gachaBusy = false, gachaFrom = 'run';
+let gachaBusy = false, gachaFrom = 'run', gachaGrant = null;
 function openGacha(title, from = 'run') {
   gachaFrom = from;
   if (from === 'menu') { G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; }
@@ -2339,18 +2346,26 @@ function spinGacha() {
   const cap = $('gcCap'); cap.style.setProperty('--cap', prize.color);
   cap.className = 'cap'; void cap.offsetWidth; cap.className = 'cap drop';
   $('gcPrize').innerHTML = '&nbsp;';
-  setTimeout(() => {
-    cap.className = 'cap open';
+  let granted = false;
+  const grant = () => {   // 景品をもらう(演出の途中でページを閉じても、もらえるように)
+    if (granted) return; granted = true; gachaGrant = null;
     // AI は「次の通常モードのステージで、配られる数に足す」(持っているだけだと、配られる数より少ないと意味がないので)
     if (prize.ai) G.save.bonusAi = (G.save.bonusAi || 0) + prize.ai;
     const keep = gachaFrom !== 'menu' && G.playMode !== 'normal' && prize.special;
     if (keep) G.save.special += prize.special;    // 残業の途中の課金パワーは通常モードに持ち越し
     else G.special += prize.special;
     G.lives = Math.min(9, G.lives + prize.life);
+    persist(gachaFrom === 'menu' ? 'menu' : 'play');
+  };
+  gachaGrant = grant;
+  setTimeout(() => {
+    cap.className = 'cap open';
+    grant();
+    const keep = gachaFrom !== 'menu' && G.playMode !== 'normal' && prize.special;
     const note = prize.ai ? (gachaFrom !== 'menu' && G.playMode !== 'normal' ? '通常モードの次のステージで足される' : '次のステージで配られるAIに足される') : keep ? '通常モードに持ち越し' : '';
     $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}` + (note ? `<br><small>(${note})</small>` : '');
     (prize.special ? sfx.power : prize.life ? sfx.power : sfx.done)();
-    gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu' ? 'menu' : 'play');
+    gachaBusy = false; refreshGacha(); updateHud();
   }, 950);
 }
 function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return openLocker(); buildStage(G.stage + 1); setMode('play'); }
@@ -2586,6 +2601,7 @@ function bonusHTML(b) {
     `<div class="tot"><span>ボーナス合計</span><b>+${tot}</b></div>`;
 }
 function stageCleared() {
+  G.stageBonus = 0;   // クリアしたら、ガシャのAIは使ったことになる
   const b = stageBonus();
   endLog('clear');
   if (b.throws === 0) award('jiriki');
@@ -2801,9 +2817,12 @@ G.device = store.get('device', 'pc');
 refreshTitle(); resize(); setMode('title');
 // タイトルの後ろに1面を映しておく(ブロックの文字をきれいに描くため、フォントの読み込みを少し待つ)
 function backdrop() {
+  if (G.runId) return;   // もう遊びはじめていたら、飾りのステージは作らない
+  G.isBackdrop = true;
   G.hero = makeHero(CHARS[0].look); scene.add(G.hero); G.player = G.hero.position;
   G.char = CHARS[0]; buildStage(0); $('banner').classList.add('hidden'); G.camYaw = 0.5;
   G.log = null;   // 飾りのステージなので、プレイログには入れない
+  G.isBackdrop = false;
 }
 const fontsReady = document.fonts ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
 fontsReady.then(() => { backdrop(); requestAnimationFrame(loop); });
