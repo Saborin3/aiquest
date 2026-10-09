@@ -1101,7 +1101,7 @@ function updateItems(dt) {
 // ---------------- 敵 ----------------
 function updateEnemies(dt) {
   const p = G.player;
-  for (const e of G.enemies) {
+  for (const e of G.enemies.slice()) {
     if (e.dead) continue;
     const m = e.mesh;
     if (e.boss || e.chase) {
@@ -1938,8 +1938,12 @@ const NAME_RE = /^[A-Za-z0-9_-]{1,12}$/, PASS_RE = /^[A-Za-z0-9]{4,12}$/;
 async function gasPost(body, keepalive = false) {
   // Content-Type を付けない(text/plain になる)と、ブラウザの事前確認なしでGASに送れる
   // keepalive:ページを閉じる途中でも送りきる(プレイログ用)
-  const r = await fetch(ONLINE.url, { method: 'POST', keepalive, body: JSON.stringify(Object.assign({ key: ONLINE.secret }, body)) });
-  return r.json();
+  const ctl = !keepalive && window.AbortController ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), 20000) : 0;       // 20秒たっても返事がなければあきらめる
+  try {
+    const r = await fetch(ONLINE.url, { method: 'POST', keepalive, signal: ctl ? ctl.signal : undefined, body: JSON.stringify(Object.assign({ key: ONLINE.secret }, body)) });
+    return await r.json();
+  } finally { clearTimeout(timer); }
 }
 async function gasTop(n, key = 'normal') {
   const q = key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`;
@@ -2001,7 +2005,7 @@ function sendScoreQuiet(keepalive = false) {
   const body = scoreBody(G.acct);
   keepScore(body);                                   // 先に取っておく(ページを閉じても次に送れる)
   sendingScores.add(scoreKey(body));
-  gasPost(body, keepalive).then(res => { if (res.ok || res.error !== 'busy') dropScore(body); Object.keys(rkCache).forEach(k => delete rkCache[k]); })
+  gasPost(body, true).then(res => { if (res.ok || (res.error !== 'busy' && res.error !== 'not owner')) dropScore(body); Object.keys(rkCache).forEach(k => delete rkCache[k]); })
     .catch(() => {}).finally(() => sendingScores.delete(scoreKey(body)));
 }
 // 送れなかったスコアはブラウザに取っておいて、次につながったときに送る(ランキングから記録が消えないように)
@@ -2011,16 +2015,19 @@ function pendingScores() { return store.get('pendingScores', []); }
 function keepScore(body) { const q = pendingScores().filter(b => b.date !== body.date || b.score !== body.score || b.name !== body.name); q.push(body); store.set('pendingScores', q.slice(-30)); }
 function dropScore(body) { store.set('pendingScores', pendingScores().filter(b => !(b.date === body.date && b.score === body.score && b.name === body.name))); }
 let flushingScores = false;
-async function flushScores() {
+async function flushScores(keepalive = false) {
   if (flushingScores || !pendingScores().length) return;
   flushingScores = true;
   try {
-    for (const body of pendingScores()) {
-      if (sendingScores.has(scoreKey(body))) continue;
+    for (const saved of pendingScores()) {
+      if (sendingScores.has(scoreKey(saved))) continue;
+      const body = Object.assign({}, saved);
+      if (G.acct && G.acct.name.toLowerCase() === String(body.name).toLowerCase()) body.token = G.acct.token;   // ログインし直していたら新しい鍵で
       let res;
-      try { res = await gasPost(body); } catch (e) { break; }
+      try { res = await gasPost(body, keepalive); } catch (e) { break; }
       if (!res.ok && res.error === 'busy') break;
-      dropScore(body);
+      if (!res.ok && res.error === 'not owner') continue;      // ログインし直すまで取っておく
+      dropScore(saved);
     }
     Object.keys(rkCache).forEach(k => delete rkCache[k]);
   } finally { flushingScores = false; }
@@ -2036,10 +2043,9 @@ async function sendScore(acct) {
   msg('送信中…');
   keepScore(body);                            // 送れなかったときのために取っておく
   sendingScores.add(scoreKey(body));
-  try { await Promise.race([saveBusy, wait(4000)]); } catch (e) {}      // 称号などのセーブを先に届ける(4秒以上は待たない)
   try {
-    const res = await gasPost(body);
-    if (res.ok || res.error !== 'busy') dropScore(body);
+    const res = await gasPost(body, true);     // すぐ送る。keepalive:画面が消えても送りきる
+    if (res.ok || (res.error !== 'busy' && res.error !== 'not owner')) dropScore(body);
     if (res.ok) {
       Object.keys(rkCache).forEach(k => delete rkCache[k]);
       if (!here()) return;
@@ -2047,7 +2053,7 @@ async function sendScore(acct) {
         <button class="linky" id="rkView">ランキングを見る</button>`;
       $('rkView').onclick = () => openRanking();
     } else if (res.error === 'not owner') {
-      store.set('acct', null); msg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
+      store.set('acct', null); G.acct = null; msg('ログインが切れたので、もう一度ログインしたときに送ります', 'bad');
     } else if (res.error === 'busy') msg('混み合っていたので、あとで自動で送ります', 'bad');
     else msg('登録できませんでした:' + errText(res.error), 'bad');
   } catch (e) { msg('サーバーにつながらなかったので、あとで自動で送ります', 'bad'); }
@@ -2135,7 +2141,7 @@ function persist(from = 'play') {
   if (!G.acct) return;
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
-    if (!res.ok && res.error === 'not owner') { toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); }
+    if (!res.ok && res.error === 'not owner') { if (G.acct) toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); G.acct = null; }
     else if (!res.ok && res.error === 'busy') retrySave();      // 混んでいた → 少しあとでもう一度
   }).catch(() => retrySave()));
 }
@@ -2186,6 +2192,12 @@ async function flushLogs() {
     }
   } finally { flushingLogs = false; }
 }
+addEventListener('pageshow', e => {
+  if (!e.persisted) return;
+  if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) { G.submitted = false; if (G.mode === 'play' || G.mode === 'pause') { G.log = null; startLog(); } }
+  flushScores(); flushLogs();
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushScores(true); });
 addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
