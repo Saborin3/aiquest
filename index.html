@@ -969,6 +969,8 @@ function buildStage(i) {
   if (st.boss) spawnEnemy(st.boss, true);
   // プレイヤー
   G.ammo = stageAmmo(st, G.ammo);
+  const bonusAi = G.playMode === 'normal' ? (G.save.bonusAi || 0) : 0;
+  if (bonusAi > 0) { G.ammo += bonusAi; G.save.bonusAi = 0; }   // ガシャで出たAIは、配られる数に足す
   G.respawnPt = new THREE.Vector3(0, 0, 0);
   G.stageScore0 = G.score;            // やり直したときに戻すスコア
   G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
@@ -977,6 +979,7 @@ function buildStage(i) {
   if (i === STAGES.length - 1) preloadEndingVoices();
   spawnCards(i);
   startLog(); startStageStats();
+  if (bonusAi > 0) setTimeout(() => toast(`ガシャのAI +${bonusAi}!`), 1900);
   showBanner(G.playMode === 'overtime' ? `残業 STAGE ${i + 1}\n${st.name}` : G.playMode === 'daily' ? `今日のお題\n${G.daily.rule.name}` : `STAGE ${i + 1}\n${st.name}`, 1.8);
   updateHud();
 }
@@ -1020,7 +1023,7 @@ function respawn(full) {
   G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = 0; G.grounded = false;
   G.inv = full ? 0 : 2; G.safe = 0; G.run = 0;
   // 残業モードで追いかけてきたボスは、ミスしたら持ち場にもどる(復活地点で待ちぶせしないように)
-  for (const e of G.enemies || []) if (e.boss && e.engaged && !e.dead) { e.engaged = false; e.calm = true; e.mesh.position.copy(e.start); }
+  for (const e of G.enemies || []) if (e.boss && e.engaged && !e.dead) { e.engaged = false; e.calm = true; e.detour = null; e.mesh.position.copy(e.start); }
 }
 
 // ---------------- 当たり判定(箱どうし) ----------------
@@ -1053,6 +1056,11 @@ function movePlayer(dx, dz) {
 }
 function physics(dt) {
   const p = G.player;
+  // 下がっていくエレベーターに乗っているときは、いっしょに下がる(ジャンプできないフレームができないように)
+  if (G.grounded && G.vy <= 0) {
+    const m = G.movers.find(b => b.dy < 0 && Math.abs(b.maxY - b.dy - p.y) < 0.05 && p.x > b.minX - 0.05 && p.x < b.maxX + 0.05 && p.z > b.minZ - 0.05 && p.z < b.maxZ + 0.05);
+    if (m) p.y += m.dy;
+  }
   G.vy = Math.max(G.vy - GRAVITY * dt, -40);
   const dy = G.vy * dt;
   if (dy <= 0) {
@@ -1132,9 +1140,10 @@ function bossFloor(e) {
     e.start.x >= b.minX && e.start.x <= b.maxX && e.start.z >= b.minZ && e.start.z <= b.maxZ) || null;
   return e.floor;
 }
-function bossBlocked(e, fl, x, z) {
+function bossBlocked(e, fl, x, z) { return !!bossBlocker(e, fl, x, z); }
+function bossBlocker(e, fl, x, z) {   // ボスがぶつかる机など(宙に浮いた ? ブロックは関係ない)
   const half = e.size / 2, bottom = (fl ? fl.maxY : e.start.y - half) + 0.3, top = e.start.y + half;
-  return G.solids.some(b => b !== fl && !b.mover && b.maxY > bottom && b.minY < bottom + 0.5 && b.minY < top &&
+  return G.solids.find(b => b !== fl && !b.mover && b.maxY > bottom && b.minY < bottom + 0.5 && b.minY < top &&
     x + half > b.minX && x - half < b.maxX && z + half > b.minZ && z - half < b.maxZ);
 }
 function updateEnemies(dt) {
@@ -1152,8 +1161,29 @@ function updateEnemies(dt) {
         const clampX = x => fl ? Math.max(fl.minX + half, Math.min(fl.maxX - half, x)) : x;
         const clampZ = z => fl ? Math.max(fl.minZ + half, Math.min(fl.maxZ - half, z)) : z;
         const nx = clampX(m.position.x + dx / d * e.speed * dt), nz = clampZ(m.position.z + dz / d * e.speed * dt);
-        if (!bossBlocked(e, fl, nx, m.position.z)) m.position.x = nx;   // 机などにはめりこまない
-        if (!bossBlocked(e, fl, m.position.x, nz)) m.position.z = nz;
+        const x0 = m.position.x, z0 = m.position.z, want = e.speed * dt, P = m.position;
+        if (e.detour) {
+          // 机の角へ回りこみ中:決めた角まで横に進みながら、プレイヤーの方へも進む
+          const d = e.detour, cur = d.axis === 'x' ? P.x : P.z;
+          const v = Math.sign(d.t - cur) * Math.min(want, Math.abs(d.t - cur));
+          if (d.axis === 'x') { const sx = clampX(P.x + v); if (!bossBlocked(e, fl, sx, P.z)) P.x = sx; else e.detour = null;
+            if (!bossBlocked(e, fl, P.x, nz)) P.z = nz; }
+          else { const sz = clampZ(P.z + v); if (!bossBlocked(e, fl, P.x, sz)) P.z = sz; else e.detour = null;
+            if (!bossBlocked(e, fl, nx, P.z)) P.x = nx; }
+          if (Math.abs(d.t - (d.axis === 'x' ? P.x : P.z)) < 0.01 || G.now > d.until) e.detour = null;
+        } else {
+          const bx = bossBlocker(e, fl, nx, z0); if (!bx) P.x = nx;   // 机などにはめりこまない
+          const bz = bossBlocker(e, fl, P.x, nz); if (!bz) P.z = nz;
+          // 机にぶつかって進めないときは、机の近いほうの角へ回りこむ
+          if ((bx || bz) && Math.hypot(P.x - x0, P.z - z0) < want * 0.5) {
+            const b = bz || bx, ax = bz ? 'x' : 'z';
+            const lo = ax === 'x' ? b.minX - half - 0.1 : b.minZ - half - 0.1, hi = ax === 'x' ? b.maxX + half + 0.1 : b.maxZ + half + 0.1;
+            const cur = ax === 'x' ? P.x : P.z, clamp = ax === 'x' ? clampX : clampZ;
+            let t = cur - lo < hi - cur ? lo : hi;
+            if (clamp(t) !== t) t = t === lo ? hi : lo;           // 足場の外になる角はやめる
+            if (clamp(t) === t) e.detour = { axis: ax, t, until: G.now + 4 };
+          }
+        }
       }
       if (e.bar) { e.bar.position.set(m.position.x, m.position.y + e.size / 2 + 0.8, m.position.z); e.bar.quaternion.copy(camera.quaternion); }
       if (e.shoot && near && Math.hypot(p.x - m.position.x, p.z - m.position.z) < 22) { e.shootT -= dt; if (e.shootT <= 0) { e.shootT = e.shoot; bossShoot(e); } }
@@ -1302,7 +1332,7 @@ function updateSpecial(dt) {
     G.sp = null; G.mode = 'play'; G.safe = Math.max(G.safe || 0, 1);
     $('spDark').classList.add('hidden'); $('spBanner').classList.add('hidden');
     $('touch').classList.toggle('hidden', G.device !== 'touch');
-    updateHud();
+    updateHud(); checkRotate();
   }
 }
 
@@ -1873,13 +1903,13 @@ function openCharsel() {
   try { refreshNewsBadge(); } catch (e) { /* 読みこみ途中 */ }
   setMode('charsel');
   for (const c of CHARS) preloadVoices(c.name, ['select']);
-  setPicked(G.save.character || 0, true); refreshCharsel();
+  setPicked(picked, true); refreshCharsel();
 }
 function refreshCharsel() {
   const sv = G.save, who = G.acct ? G.acct.name : 'ゲスト';
   if (G.selMode === 'overtime' && !overtimeOpen()) G.selMode = 'normal';
   $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span>ハイスコア ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}</span><span>所持 ${sv.dol}どる</span>` +
-    `<span>AI ${sv.ammo}</span><span>課金パワー ${sv.special}</span>`;
+    `<span>AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span>課金パワー ${sv.special}</span>`;
   document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); });
   const note = $('csModeNote');
   $('csStage').classList.toggle('hidden', G.selMode !== 'normal'); note.classList.toggle('hidden', G.selMode === 'normal');
@@ -1890,8 +1920,8 @@ function refreshCharsel() {
   $('stPrev').disabled = G.startStage <= 0; $('stNext').disabled = G.startStage >= sv.unlocked - 1;
 }
 function moveStage(d) { G.startStage += d; refreshCharsel(); sfx.locked && tone(900, 900, 0.04, 'sine', 0.08); }
-$('stPrev').onclick = () => moveStage(-1);
-$('stNext').onclick = () => moveStage(1);
+$('stPrev').onclick = e => { moveStage(-1); e.currentTarget.blur(); };   // Enter でもう一度押されないように
+$('stNext').onclick = e => { moveStage(1); e.currentTarget.blur(); };
 $('csLogout').onclick = () => openLogin(true);
 function setPicked(i, quiet) {
   const changed = !quiet && picked !== (i + CHARS.length) % CHARS.length;
@@ -1980,7 +2010,7 @@ function showResult(kind) {
   } else if (kind === 'daily') {
     $('rTitle').textContent = 'お題クリア!';
     $('rBody').textContent = `今日のお題「${G.daily.rule.name}」クリア! スコアは ${G.score}点。` + (G.lastBonus && G.lastBonus.dol ? `\n今日はじめてのクリアなので +${G.lastBonus.dol}どる` : '');
-    $('rNext').textContent = 'もう一度挑戦'; resultNext = () => startRun(G.char, 'daily');
+    $('rNext').textContent = 'もう一度挑戦'; resultNext = () => { const old = G.daily && G.daily.day; startRun(G.char, 'daily'); if (old && G.daily && G.daily.day !== old) toast('日付が変わったので\n新しいお題です'); };
   } else {
     $('rTitle').textContent = '残業、確定…';
     $('rBody').textContent = `${STAGES[G.stage].name}でライフがなくなった。スコアは ${G.score}点。`;
@@ -2150,6 +2180,7 @@ function startWith(acct, save, msg, created = false) {
   G.acct = acct; G.save = fixSave(save);
   G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; G.score = 0; G.playMode = 'normal';
   G.selMode = store.get('selMode', 'normal');
+  picked = Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0));   // 最初はいつものキャラを選んでおく
   // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
   if (created || !store.get('introSeen', false)) {
     G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;
@@ -2287,8 +2318,9 @@ function openGacha(title, from = 'run') {
   setTimeout(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }, 60);
 }
 function refreshGacha() {
-  $('gcInfo').textContent = gachaFrom === 'menu' ? `所持 ${G.doru}どる ・ AI ${G.ammo} ・ 課金パワー ${G.special} ・ 着せ替え ${G.save.items.length}/${ITEMS.length}`
-    : `所持 ${G.doru}どる ・ AI ${G.ammo} ・ LIFE ${G.lives} ・ 課金パワー ${G.special}`;
+  const plus = !G.save.bonusAi ? '' : gachaFrom !== 'menu' && G.playMode !== 'normal' ? ` (通常モード用 +${G.save.bonusAi})` : ` (+${G.save.bonusAi})`;
+  $('gcInfo').textContent = gachaFrom === 'menu' ? `所持 ${G.doru}どる ・ AI ${G.ammo}${plus} ・ 課金パワー ${G.special} ・ 着せ替え ${G.save.items.length}/${ITEMS.length}`
+    : `所持 ${G.doru}どる ・ AI ${G.ammo}${plus} ・ LIFE ${G.lives} ・ 課金パワー ${G.special}`;
   $('gcSpin').disabled = gachaBusy || G.doru < GACHA_COST;
   $('gcSpin').innerHTML = G.doru < GACHA_COST ? 'どるが足りない' : `回す ${GACHA_COST}どる<span class="kh"> [スペース]</span>`;
 }
@@ -2309,11 +2341,14 @@ function spinGacha() {
   $('gcPrize').innerHTML = '&nbsp;';
   setTimeout(() => {
     cap.className = 'cap open';
-    const keep = gachaFrom !== 'menu' && G.playMode !== 'normal' && (prize.ai || prize.special);
-    if (keep) { G.save.ammo += prize.ai; G.save.special += prize.special; }    // 残業・お題中は通常モードに持ち越し
-    else { G.ammo += prize.ai; G.special += prize.special; }
+    // AI は「次の通常モードのステージで、配られる数に足す」(持っているだけだと、配られる数より少ないと意味がないので)
+    if (prize.ai) G.save.bonusAi = (G.save.bonusAi || 0) + prize.ai;
+    const keep = gachaFrom !== 'menu' && G.playMode !== 'normal' && prize.special;
+    if (keep) G.save.special += prize.special;    // 残業の途中の課金パワーは通常モードに持ち越し
+    else G.special += prize.special;
     G.lives = Math.min(9, G.lives + prize.life);
-    $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}` + (keep ? '<br><small>(通常モードに持ち越し)</small>' : '');
+    const note = prize.ai ? (gachaFrom !== 'menu' && G.playMode !== 'normal' ? '通常モードの次のステージで足される' : '次のステージで配られるAIに足される') : keep ? '通常モードに持ち越し' : '';
+    $('gcPrize').innerHTML = `<small>${prize.rank}</small>${prize.text}` + (note ? `<br><small>(${note})</small>` : '');
     (prize.special ? sfx.power : prize.life ? sfx.power : sfx.done)();
     gachaBusy = false; refreshGacha(); updateHud(); persist(gachaFrom === 'menu' ? 'menu' : 'play');
   }, 950);
@@ -2331,7 +2366,7 @@ function introPages() {
       '<li>F / クリック … AIを投げる</li><li>E … 必殺技「課金パワー」</li><li>H / Esc … 一時停止・あそびかた</li><li>R … この面をやり直す</li></ul>';
   const screens = G.device === 'touch'
     ? '<ul><li>【キャラ選択】キャラをタップ、◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
-    : '<ul><li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    L ランキング、H あそびかた</li>' +
+    : '<ul><li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    M モード、L ランキング、G ガシャ・称号、I お知らせ、H あそびかた</li>' +
       '<li>【ガシャ】スペース 回す(100どる)、Enter 次へ</li><li>【エンディング】Enter でとばす</li></ul>';
   const chars = CHARS.slice().sort((a, b) => a.score - b.score).map(c =>
     `<div class="ch"><b>${c.name}</b>(スコア <span class="mult">×${c.score}</span>)… ${c.role}<br>${c.desc}</div>`).join('');
@@ -2381,7 +2416,7 @@ $('csHelp').onclick = () => openIntro(() => openCharsel());
 $('csRank').onclick = () => openRanking();
 
 // ランキング画面
-let rankFrom = 'title', rkTab = 'normal', rkStage = 1, rkSeq = 0;
+let rankFrom = 'title', rkTab = 'normal', rkStage = 1, rkSeq = 0, rkDay = null;
 const rkCache = {};
 function openRanking() {
   const from = G.mode;
@@ -2389,6 +2424,7 @@ function openRanking() {
   let tab = rkTab;
   if (from === 'result' && (G.playMode === 'overtime' || G.playMode === 'daily')) tab = G.playMode;
   else if (from === 'result') tab = 'normal';
+  if (from !== 'ranking') rkDay = from === 'result' && G.playMode === 'daily' && G.daily ? G.daily.day : null;   // 結果画面からは、遊んだ日のお題
   setMode('ranking'); setRankTab(tab);
 }
 function setRankTab(t, stage) {
@@ -2397,12 +2433,12 @@ function setRankTab(t, stage) {
   document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
   $('rkStages').classList.toggle('hidden', t !== 'time');
   $('rkNote').textContent = { normal: 'PC版(exe)とWeb版、みんなの自己ベスト', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
-    daily: '今日のお題:' + dailyText(), time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t];
+    daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t];
   loadRank();
 }
 async function loadRank() {
   const seq = ++rkSeq, list = $('rankList'), me = ((G.acct || store.get('acct', null)) || {}).name;
-  const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + jstDay() : rkTab;
+  const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + (rkDay || jstDay()) : rkTab;
   const draw = res => {
     if (seq !== rkSeq) return;
     if (rkTab === 'time') {
@@ -2481,12 +2517,12 @@ const DAILY_RULES = [
   { id: 'rush', name: '定時ダッシュの日', desc: '定時ボーナスが2倍', timeMul: 2 },
 ];
 function defaultSave() {
-  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0, dailyDay: 0,
+  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0, dailyDay: 0, bonusAi: 0,
            titles: [], items: [], cards: [], title: '', equip: {}, times: [0, 0, 0, 0, 0] };
 }
 function fixSave(sv) {
   const s = Object.assign(defaultSave(), sv || {});
-  for (const k of ['dol', 'ammo', 'special', 'best', 'character', 'cleared', 'clearChars', 'bestOt', 'dailyDay']) { const v = Math.floor(Number(s[k])); s[k] = isFinite(v) && v > 0 ? v : 0; }
+  for (const k of ['dol', 'ammo', 'special', 'best', 'character', 'cleared', 'clearChars', 'bestOt', 'dailyDay', 'bonusAi']) { const v = Math.floor(Number(s[k])); s[k] = isFinite(v) && v > 0 ? v : 0; }
   s.unlocked = Math.max(1, Math.min(STAGES.length, Math.floor(Number(s.unlocked)) || 1));
   s.character = Math.min(CHARS.length - 1, s.character);
   if (typeof s.title !== 'string') s.title = '';
@@ -2706,11 +2742,11 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
-  { id: 3, date: '2026/10/09', title: '残業モードがもっと手ごわく', items: [
+  { id: 4, date: '2026/10/09', title: '残業モードがもっと手ごわく', items: [
     '残業モードのボスが、一度見つかると足場の上をどこまでも追いかけてくるようになりました(ミスすると持ち場にもどります)',
     'ジャンプ力を見直しました:新人 ★2 ・上司 ★3 ・先輩 ★4。上司もダッシュジャンプで大きいボスを踏めるように',
     '大きいボスが少し踏みやすくなりました',
-    '残業・今日のお題の途中のガシャで出た AI と課金パワーは、通常モードに持ち越されるようになりました',
+    'ガシャで出た AI は、次の通常モードのステージで「配られる AI」に足されるようになりました(ロッカーや残業中のガシャも同じ。残業中の課金パワーは通常モードに持ち越し)',
     '「お知らせ」画面をつくりました',
     'やり直し(R)でライフが増えてしまう、残業でミスしたあとにボスが待ちぶせする、などの不具合を直しました',
   ] },
