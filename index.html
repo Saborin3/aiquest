@@ -273,7 +273,7 @@ body.touch .kh { display: none; }
 .locker { max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
 /* ロッカー:広い画面では左に表、右に今の見た目(3D)を出す */
 @media (min-width: 760px) {
-  #locker { justify-content: flex-start; background: linear-gradient(90deg, rgba(20,26,44,.9) 0%, rgba(20,26,44,.75) 55%, rgba(20,26,44,0) 75%); }
+  #locker { justify-content: flex-start; background: linear-gradient(90deg, rgba(20,26,44,.9) 0%, rgba(20,26,44,.7) var(--lkEdge, 50%), rgba(20,26,44,0) calc(var(--lkEdge, 50%) + 4%)); }
   #locker .panel { width: min(540px, 56vw); }
 }
 #lkLook { display: none; position: fixed; right: 4vw; bottom: 3vh; color: #fff; font-weight: 800; font-size: 14px; text-shadow: 0 1px 3px #000; z-index: 21; pointer-events: none; }
@@ -2775,23 +2775,33 @@ let lkTab = 'titles';
 function openLocker(tab) { if (tab) lkTab = tab; renderLocker(); setMode('locker'); }
 // ロッカーの3Dプレビュー(ステージから離れた所に、今の見た目のキャラを立たせて、くるくる回す)
 const LK_POS = new THREE.Vector3(500, 0, 500);
-let lkHero = null, lkFloor = null, lkT = 0;
+let lkHero = null, lkFloor = null, lkT = 0, lkLight = null;
 function lockerPreview() {
   if (lkHero) scene.remove(lkHero);
   const ch = CHARS[Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0))];
   lkHero = makeHero(ch.look, G.save.equip); lkHero.position.copy(LK_POS); scene.add(lkHero);
   if (!lkFloor) { lkFloor = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.15, 32), lam('#d9b44a')); lkFloor.position.set(LK_POS.x, -0.075, LK_POS.z); scene.add(lkFloor); }
   lkFloor.visible = true;
+  // 正面から照らすライト(ふだんの光はうしろからなので、顔や服が暗く見えないように)
+  if (!lkLight) { lkLight = new THREE.DirectionalLight(0xffffff, 0.5); lkLight.position.set(LK_POS.x + 1, 4, LK_POS.z + 7); lkLight.target.position.copy(LK_POS); scene.add(lkLight); scene.add(lkLight.target); }
+  lkLight.visible = true;
 }
 function updateLocker(dt) {
   if (!lkHero) lockerPreview();
   lkT += dt; lkHero.rotation.y = Math.sin(lkT * 0.9) * 0.9;
   poseHero(lkHero, false, true, dt);
-  const wide = innerWidth >= 760, side = wide ? -1.5 : 0;   // 広い画面では、キャラが右側に来るように
+  // 広い画面では、表の右にあいている場所のまん中にキャラが来るように、カメラを横にずらす
+  let side = 0;
+  if (innerWidth >= 760) {
+    const edge = $('locker').querySelector('.panel').getBoundingClientRect().right / innerWidth;
+    document.documentElement.style.setProperty('--lkEdge', Math.round(edge * 100) + '%');
+    const f = (edge + 1) / 2, dist = 6.2;
+    side = -(2 * f - 1) * Math.tan(camera.fov * Math.PI / 360) * camera.aspect * dist;
+  }
   camera.position.set(LK_POS.x + side, 1.7, LK_POS.z + 6.2);
   camera.lookAt(LK_POS.x + side, 1.15, LK_POS.z);
 }
-function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); lkHero = null; } if (lkFloor) lkFloor.visible = false; }
+function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); lkHero = null; } if (lkFloor) lkFloor.visible = false; if (lkLight) lkLight.visible = false; }
 function renderLocker() {
   const sv = G.save;
   if (lkHero) lockerPreview();   // つけかえたら、すぐ見た目に反映
