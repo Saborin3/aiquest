@@ -273,6 +273,13 @@ body.touch .kh { display: none; }
 .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .ttl { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--yellow); border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
 .rank-list .sub { font-size: 12px; opacity: .65; margin-left: 6px; }
+@media (max-height: 400px) {
+  .sheet h2 { font-size: 19px; margin-bottom: 4px; } .cs-info { font-size: 12.5px; margin-bottom: 2px; }
+  .card { padding: 6px 9px; gap: 3px; } .card b { font-size: 16px; } .card .role { display: none; }
+  .stats { font-size: 10.5px; line-height: 1.35; padding-top: 3px; }
+  .sheet-actions { gap: 6px; margin-top: 6px; } .sheet-actions .btn { padding: 6px 10px; font-size: 13px; }
+  .cs-mode .seg button { padding: 5px 10px; } .cs-stage .btn { padding: 4px 10px; }
+}
 @media (max-height: 480px) {
   .bonus { font-size: 12.5px; line-height: 1.4; padding: 6px 10px; } .lk-body { max-height: 46vh; }
   .cs-row { margin-top: 6px; } #csModeNote { margin-top: 4px; font-size: 12px; }
@@ -588,7 +595,8 @@ const store = {
 
 // ---------------- 効果音(その場で合成) ----------------
 let actx = null;
-function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
+function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state !== 'running' && actx.state !== 'closed') actx.resume().catch(() => {}); }
+document.getElementById('touch').addEventListener('pointerdown', () => audioOn());
 function tone(f0, f1, dur, type = 'square', vol = 0.12, delay = 0) {
   if (!actx) return;
   const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
@@ -980,7 +988,7 @@ function startRun(ch, mode = G.selMode || 'normal') {
   G.playMode = mode; G.daily = mode === 'daily' ? dailyOf() : null;
   if (G.daily) ch = CHARS[G.daily.char];
   G.char = ch; G.score = 0; G.lives = (G.daily && G.daily.rule.lives) || 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
-  G.runDeaths = 0; G.runThrows = 0; G.runId = (G.runId || 0) + 1;
+  G.runDeaths = 0; G.runThrows = 0; G.runId = (G.runId || 0) + 1; G.endBody = null;
   // 持ち越すもの(どる・AIの残り・課金パワー)はセーブから。残業・お題は AI と課金パワーを持ちこまない
   if (mode === 'normal') G.save.character = Math.max(0, CHARS.indexOf(ch));
   G.ammo = mode === 'normal' ? G.save.ammo : 0; G.special = mode === 'normal' ? G.save.special : 0; G.doru = G.save.dol;
@@ -1715,11 +1723,13 @@ function placeCamera(dt) {
 let last = performance.now();
 function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (G.mode === 'play') { update(dt); bgmScene(); }
+  try {
+    if (G.mode === 'play') { if ($('rotate').classList.contains('hidden')) update(dt); bgmScene(); }
   else if (G.mode === 'special') updateSpecial(dt);
   else if (G.mode === 'ending' && END) updateEnding(dt);
   else if (G.mode === 'result' && G.fx.length) updateFx(dt);
   if (G.player && G.mode !== 'ending') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
+  } catch (err) { if (!loop.warned) { loop.warned = true; console.error(err); } }   // 1回のエラーでゲーム全体が止まらないように
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
@@ -1938,7 +1948,7 @@ const NAME_RE = /^[A-Za-z0-9_-]{1,12}$/, PASS_RE = /^[A-Za-z0-9]{4,12}$/;
 async function gasPost(body, keepalive = false) {
   // Content-Type を付けない(text/plain になる)と、ブラウザの事前確認なしでGASに送れる
   // keepalive:ページを閉じる途中でも送りきる(プレイログ用)
-  const ctl = !keepalive && window.AbortController ? new AbortController() : null;
+  const ctl = window.AbortController ? new AbortController() : null;
   const timer = ctl ? setTimeout(() => ctl.abort(), 20000) : 0;       // 20秒たっても返事がなければあきらめる
   try {
     const r = await fetch(ONLINE.url, { method: 'POST', keepalive, signal: ctl ? ctl.signal : undefined, body: JSON.stringify(Object.assign({ key: ONLINE.secret }, body)) });
@@ -2010,10 +2020,10 @@ function sendScoreQuiet(keepalive = false) {
 }
 // 送れなかったスコアはブラウザに取っておいて、次につながったときに送る(ランキングから記録が消えないように)
 const sendingScores = new Set();   // いま送っている最中(2回送らないように)
-const scoreKey = b => `${b.name}|${b.date}|${b.score}|${b.mode}`;
+const scoreKey = b => [b.action || 'score', b.name, b.date, b.score, b.mode, b.stage, b.sec].join('|');
 function pendingScores() { return store.get('pendingScores', []); }
-function keepScore(body) { const q = pendingScores().filter(b => b.date !== body.date || b.score !== body.score || b.name !== body.name); q.push(body); store.set('pendingScores', q.slice(-30)); }
-function dropScore(body) { store.set('pendingScores', pendingScores().filter(b => !(b.date === body.date && b.score === body.score && b.name === body.name))); }
+function keepScore(body) { const k = scoreKey(body), q = pendingScores().filter(b => scoreKey(b) !== k); q.push(body); store.set('pendingScores', q.slice(-30)); }
+function dropScore(body) { const k = scoreKey(body); store.set('pendingScores', pendingScores().filter(b => scoreKey(b) !== k)); }
 let flushingScores = false;
 async function flushScores(keepalive = false) {
   if (flushingScores || !pendingScores().length) return;
@@ -2021,6 +2031,7 @@ async function flushScores(keepalive = false) {
   try {
     for (const saved of pendingScores()) {
       if (sendingScores.has(scoreKey(saved))) continue;
+      if (!keepalive && G.endBody && scoreKey(saved) === scoreKey(G.endBody)) continue;   // 全クリのスコアは結果画面で送る(ページを閉じるときだけ先に送る)
       const body = Object.assign({}, saved);
       if (G.acct && G.acct.name.toLowerCase() === String(body.name).toLowerCase()) body.token = G.acct.token;   // ログインし直していたら新しい鍵で
       let res;
@@ -2037,7 +2048,13 @@ async function sendScore(acct) {
   if (G.submitted) return;
   G.submitted = true;                         // 同じプレイを2回送らない
   const run = G.runId;
-  const body = scoreBody(acct);
+  const body = (G.lastKind === 'all' && G.endBody) || scoreBody(acct);
+  const already = G.lastKind === 'all' && G.endBody && !pendingScores().some(b => scoreKey(b) === scoreKey(G.endBody));
+  G.endBody = null;
+  if (already) {    // エンディング中に、もう送れていた
+    if (run === G.runId && G.mode === 'result') { $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${escapeHtml(acct.name)} で登録しました!</p><button class="linky" id="rkView">ランキングを見る</button>`; $('rkView').onclick = () => openRanking(); }
+    return;
+  }
   const here = () => run === G.runId && G.mode === 'result';      // まだその結果画面にいる?
   const msg = (t, k) => { if (here()) rkMsg(t, k); };
   msg('送信中…');
@@ -2142,13 +2159,13 @@ function persist(from = 'play') {
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
     if (!res.ok && res.error === 'not owner') { if (G.acct) toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); G.acct = null; }
-    else if (!res.ok && res.error === 'busy') retrySave();      // 混んでいた → 少しあとでもう一度
-  }).catch(() => retrySave()));
+    else if (!res.ok && res.error === 'busy') retrySave(from);      // 混んでいた → 少しあとでもう一度
+  }).catch(() => retrySave(from)));
 }
 let saveRetry = null;
-function retrySave() {
+function retrySave(from = 'meta') {
   if (saveRetry) return;
-  saveRetry = setTimeout(() => { saveRetry = null; persist(); }, 10000);   // 10秒後に、そのときの最新の状態を送る
+  saveRetry = setTimeout(() => { saveRetry = null; persist(from === 'menu' ? 'menu' : 'meta'); }, 10000);   // 10秒後に、セーブの中身をもう一度送る
 }
 
 // ---------------- プレイログ(研究・ゲームの改善用。ステージを1回遊ぶごとに1件) ----------------
@@ -2194,10 +2211,12 @@ async function flushLogs() {
 }
 addEventListener('pageshow', e => {
   if (!e.persisted) return;
-  if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) { G.submitted = false; if (G.mode === 'play' || G.mode === 'pause') { G.log = null; startLog(); } }
+  const inRun = ['play', 'pause', 'special'].includes(G.mode) || (G.mode === 'gacha' && gachaFrom === 'run');
+  if (inRun) { G.submitted = false; if (G.mode !== 'gacha') { const t0 = G.st ? G.st.t0 : G.now; G.log = null; startLog(); G.log.t0 = t0; } }
   flushScores(); flushLogs();
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushScores(true); });
+addEventListener('pagehide', () => flushScores(true));
 addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'pause', 'gacha', 'special'].includes(G.mode)) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
@@ -2411,6 +2430,10 @@ function defaultSave() {
 }
 function fixSave(sv) {
   const s = Object.assign(defaultSave(), sv || {});
+  for (const k of ['dol', 'ammo', 'special', 'best', 'character', 'cleared', 'clearChars', 'bestOt', 'dailyDay']) { const v = Math.floor(Number(s[k])); s[k] = isFinite(v) && v > 0 ? v : 0; }
+  s.unlocked = Math.max(1, Math.min(STAGES.length, Math.floor(Number(s.unlocked)) || 1));
+  s.character = Math.min(CHARS.length - 1, s.character);
+  if (typeof s.title !== 'string') s.title = '';
   for (const k of ['titles', 'items', 'cards']) if (!Array.isArray(s[k])) s[k] = [];
   if (!s.equip || typeof s.equip !== 'object') s.equip = {};
   if (!Array.isArray(s.times)) s.times = [0, 0, 0, 0, 0];
@@ -2482,7 +2505,11 @@ function stageCleared() {
   const reward = Math.round((REWARDS[G.stage] || 0) * (G.playMode === 'overtime' ? OVERTIME.dol : 1)); G.doru += reward;
   if (G.playMode !== 'overtime') G.save.unlocked = Math.max(G.save.unlocked, Math.min(STAGES.length, G.stage + 2));
   if (G.stage + 1 < STAGES.length) { persist(); openGacha(`${STAGES[G.stage].name} クリア! +${reward}どる`, 'run'); }
-  else { allCleared(); persist(); playEnding(); }
+  else {
+    allCleared(); persist();
+    if (G.acct) { G.endBody = Object.assign(scoreBody(G.acct), { clear: true }); keepScore(G.endBody); }
+    playEnding();
+  }
 }
 function allCleared() {
   const sv = G.save;
@@ -2508,7 +2535,12 @@ function recordTime(sec) {
   const t = G.save.times || (G.save.times = [0, 0, 0, 0, 0]), i = G.stage, old = t[i];
   if (old && sec >= old) return `${sec.toFixed(1)}秒(ベスト ${old}秒)`;
   t[i] = sec;
-  if (G.acct && sec >= [2, 4, 5, 6, 7][i]) gasPost({ action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name }).catch(() => {});
+  if (G.acct && sec >= [2, 4, 5, 6, 7][i]) {
+    const body = { action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name, date: nowStamp() };
+    keepScore(body); sendingScores.add(scoreKey(body));
+    gasPost(body).then(res => { if (res.ok || (res.error !== 'busy' && res.error !== 'not owner')) dropScore(body); })
+      .catch(() => {}).finally(() => sendingScores.delete(scoreKey(body)));
+  }
   return `${sec.toFixed(1)}秒 自己ベスト!`;
 }
 
@@ -2621,7 +2653,7 @@ document.addEventListener('dblclick', e => e.preventDefault());
 let lastTouchEnd = 0;
 document.addEventListener('touchend', e => {
   const now = Date.now();
-  if (now - lastTouchEnd < 350 && !(e.target && e.target.tagName === 'INPUT')) e.preventDefault();
+  if (now - lastTouchEnd < 350 && !(e.target && (e.target.tagName === 'INPUT' || (e.target.closest && e.target.closest('button'))))) e.preventDefault();
   lastTouchEnd = now;
 }, { passive: false });
 
