@@ -1998,8 +1998,34 @@ function scoreBody(acct) {
 function sendScoreQuiet(keepalive = false) {
   if (!G.acct || G.submitted || !(G.score > 0) || !G.char) return;
   G.submitted = true; G.lastKind = 'quit';
-  gasPost(scoreBody(G.acct), keepalive).then(() => Object.keys(rkCache).forEach(k => delete rkCache[k])).catch(() => {});
+  const body = scoreBody(G.acct);
+  keepScore(body);                                   // 先に取っておく(ページを閉じても次に送れる)
+  sendingScores.add(scoreKey(body));
+  gasPost(body, keepalive).then(res => { if (res.ok || res.error !== 'busy') dropScore(body); Object.keys(rkCache).forEach(k => delete rkCache[k]); })
+    .catch(() => {}).finally(() => sendingScores.delete(scoreKey(body)));
 }
+// 送れなかったスコアはブラウザに取っておいて、次につながったときに送る(ランキングから記録が消えないように)
+const sendingScores = new Set();   // いま送っている最中(2回送らないように)
+const scoreKey = b => `${b.name}|${b.date}|${b.score}|${b.mode}`;
+function pendingScores() { return store.get('pendingScores', []); }
+function keepScore(body) { const q = pendingScores().filter(b => b.date !== body.date || b.score !== body.score || b.name !== body.name); q.push(body); store.set('pendingScores', q.slice(-30)); }
+function dropScore(body) { store.set('pendingScores', pendingScores().filter(b => !(b.date === body.date && b.score === body.score && b.name === body.name))); }
+let flushingScores = false;
+async function flushScores() {
+  if (flushingScores || !pendingScores().length) return;
+  flushingScores = true;
+  try {
+    for (const body of pendingScores()) {
+      if (sendingScores.has(scoreKey(body))) continue;
+      let res;
+      try { res = await gasPost(body); } catch (e) { break; }
+      if (!res.ok && res.error === 'busy') break;
+      dropScore(body);
+    }
+    Object.keys(rkCache).forEach(k => delete rkCache[k]);
+  } finally { flushingScores = false; }
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
 async function sendScore(acct) {
   if (G.submitted) return;
   G.submitted = true;                         // 同じプレイを2回送らない
@@ -2008,9 +2034,12 @@ async function sendScore(acct) {
   const here = () => run === G.runId && G.mode === 'result';      // まだその結果画面にいる?
   const msg = (t, k) => { if (here()) rkMsg(t, k); };
   msg('送信中…');
-  try { await saveBusy; } catch (e) {}      // 称号などのセーブを先にサーバーに届けてから
+  keepScore(body);                            // 送れなかったときのために取っておく
+  sendingScores.add(scoreKey(body));
+  try { await Promise.race([saveBusy, wait(4000)]); } catch (e) {}      // 称号などのセーブを先に届ける(4秒以上は待たない)
   try {
     const res = await gasPost(body);
+    if (res.ok || res.error !== 'busy') dropScore(body);
     if (res.ok) {
       Object.keys(rkCache).forEach(k => delete rkCache[k]);
       if (!here()) return;
@@ -2019,8 +2048,10 @@ async function sendScore(acct) {
       $('rkView').onclick = () => openRanking();
     } else if (res.error === 'not owner') {
       store.set('acct', null); msg('ログインが切れたので送れませんでした。もう一度ログインしてね', 'bad');
-    } else msg('登録できませんでした:' + errText(res.error), 'bad');
-  } catch (e) { msg('サーバーにつながりませんでした', 'bad'); }
+    } else if (res.error === 'busy') msg('混み合っていたので、あとで自動で送ります', 'bad');
+    else msg('登録できませんでした:' + errText(res.error), 'bad');
+  } catch (e) { msg('サーバーにつながらなかったので、あとで自動で送ります', 'bad'); }
+  finally { sendingScores.delete(scoreKey(body)); }
 }
 
 // ---------------- ログインとセーブ(どの端末からでも続きから) ----------------
@@ -2047,11 +2078,11 @@ function startWith(acct, save, msg, created = false) {
   if (created || !store.get('introSeen', false)) {
     G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;
     if (acct) store.set('acct', acct);
-    flushLogs();
+    flushLogs(); flushScores();
     return openIntro(() => { openCharsel(); if (msg) toast(msg); });
   }
   if (acct) store.set('acct', acct);
-  flushLogs();                                                  // 前に送れなかったログがあれば送る
+  flushLogs(); flushScores();                                   // 前に送れなかったログ・スコアがあれば送る
   G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;   // ログインした人は続きから、ゲストは1面から
   openCharsel(); if (msg) toast(msg);
 }
@@ -2137,7 +2168,7 @@ function pendingLogs() { return store.get('pendingLogs', []); }
 function keepLog(body) { const q = pendingLogs(); q.push(body); store.set('pendingLogs', q.slice(-MAX_PENDING_LOGS)); }
 function sendLog(body) {
   gasPost(body, true).then(res => {
-    if (res.ok) flushLogs();
+    if (res.ok) { flushLogs(); flushScores(); }
     else if (res.error === 'busy') keepLog(body);              // 混んでいた → あとで
   }).catch(() => keepLog(body));                              // つながらなかった → あとで
 }
@@ -2465,7 +2496,7 @@ function recordTime(sec) {
   const t = G.save.times || (G.save.times = [0, 0, 0, 0, 0]), i = G.stage, old = t[i];
   if (old && sec >= old) return `${sec.toFixed(1)}秒(ベスト ${old}秒)`;
   t[i] = sec;
-  if (G.acct && sec >= 6) gasPost({ action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name }).catch(() => {});
+  if (G.acct && sec >= [2, 4, 5, 6, 7][i]) gasPost({ action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name }).catch(() => {});
   return `${sec.toFixed(1)}秒 自己ベスト!`;
 }
 
