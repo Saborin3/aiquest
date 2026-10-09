@@ -173,6 +173,7 @@ body.touch .kh { display: none; }
 #bThrow { right: calc(max(18px, env(safe-area-inset-right, 0px)) + calc(78px * var(--s))); bottom: max(20px, env(safe-area-inset-bottom, 0px)); width: calc(58px * var(--s)); height: calc(58px * var(--s)); background: #fff; font-size: calc(12px * var(--s)); }
 #bThrow b { color: var(--blue); font-family: var(--font-title); font-weight: 400; font-size: calc(15px * var(--s)); }
 #bLook { right: max(22px, env(safe-area-inset-right, 0px)); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + calc(80px * var(--s))); width: calc(46px * var(--s)); height: calc(46px * var(--s)); background: rgba(246,245,240,.85); font-size: calc(10px * var(--s)); }
+#bView { right: max(22px, env(safe-area-inset-right, 0px)); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + calc(132px * var(--s))); width: calc(46px * var(--s)); height: calc(46px * var(--s)); background: rgba(246,245,240,.85); font-size: calc(10px * var(--s)); }
 .tbtn { opacity: .82; } .tbtn:active, .tbtn.on { opacity: 1; }
 
 /* ヘルプ・ポーズ */
@@ -270,6 +271,13 @@ body.touch .kh { display: none; }
 .bonus b { font-variant-numeric: tabular-nums; }
 .bonus .tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; font-weight: 800; color: var(--vermilion); }
 .locker { max-height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+/* ロッカー:広い画面では左に表、右に今の見た目(3D)を出す */
+@media (min-width: 760px) {
+  #locker { justify-content: flex-start; background: linear-gradient(90deg, rgba(20,26,44,.9) 0%, rgba(20,26,44,.75) 55%, rgba(20,26,44,0) 75%); }
+  #locker .panel { width: min(540px, 56vw); }
+}
+#lkLook { display: none; position: fixed; right: 4vw; bottom: 3vh; color: #fff; font-weight: 800; font-size: 14px; text-shadow: 0 1px 3px #000; z-index: 21; pointer-events: none; }
+@media (min-width: 760px) { #locker:not(.hidden) ~ #lkLook { display: block; } }
 .news-new { display: inline-block; font-size: 10px; font-weight: 800; background: #d63a3a; color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 6px; vertical-align: 2px; }
 .news-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; max-height: 58vh; border-top: 1px solid var(--line); text-align: left; }
 .news-body h3 { font-size: 16px; margin: 14px 0 4px; }
@@ -415,6 +423,7 @@ body.touch .kh { display: none; }
 <div id="touch" class="hidden">
   <div id="stick" aria-label="移動スティック"><div id="knob"></div></div>
   <button class="tbtn" id="bLook" aria-label="視点を戻す">視点<br>もどす</button>
+  <button class="tbtn" id="bView" aria-label="正面から見る">正面<br>から</button>
   <button class="tbtn" id="bThrow" aria-label="AIを投げる"><span><b>AI</b><br>投げる</span></button>
   <button class="tbtn" id="bJump" aria-label="ジャンプ">ジャンプ</button>
   <button class="tbtn hidden" id="bSP" aria-label="必殺技 課金パワー">課金</button>
@@ -497,6 +506,8 @@ body.touch .kh { display: none; }
     <div class="row"><button class="btn" id="lkGacha">ガシャを回す(100どる)</button><button class="btn primary" id="lkClose">もどる</button></div>
   </div>
 </section>
+
+<div id="lkLook">いまの見た目</div>
 
 <!-- 縦向きのとき -->
 <section id="rotate" class="screen hidden" aria-label="横向きにしてね">
@@ -1028,7 +1039,7 @@ function startRun(ch, mode = G.selMode || 'normal') {
 }
 function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
-  G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = 0; G.grounded = false;
+  G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = G.view === 'front' ? Math.PI : 0; G.grounded = false;
   G.inv = full ? 0 : 2; G.safe = 0; G.run = 0;
   // 残業モードで追いかけてきたボスは、ミスしたら持ち場にもどる(復活地点で待ちぶせしないように)
   for (const e of G.enemies || []) if (e.boss && e.engaged && !e.dead) { e.engaged = false; e.calm = true; e.detour = null; e.mesh.position.copy(e.start); }
@@ -1672,6 +1683,7 @@ window.addEventListener('keydown', e => {
     if (k === 'e') useSpecial();
     if (k === 'h' || k === 'Escape') openPause();
     if (k === 'r') retryStage();
+    if (k === 'c') toggleView();
   } else if (G.mode === 'pause') {
     if (k === 'h' || k === 'Escape' || k === 'Enter') closePause();
   } else if (G.mode === 'title') {
@@ -1756,7 +1768,11 @@ const jumpUp = () => { bJump.classList.remove('on'); jumpRelease(); };
 bJump.addEventListener('pointerup', jumpUp); bJump.addEventListener('pointercancel', jumpUp); bJump.addEventListener('pointerleave', jumpUp);
 document.getElementById('bThrow').addEventListener('pointerdown', e => { e.preventDefault(); throwAI(); });
 document.getElementById('bSP').addEventListener('pointerdown', e => { e.preventDefault(); useSpecial(); });
-document.getElementById('bLook').addEventListener('pointerdown', e => { e.preventDefault(); G.camYaw = G.yaw; G.pitch = 0.28; });
+document.getElementById('bLook').addEventListener('pointerdown', e => { e.preventDefault(); setView('back'); G.camYaw = G.yaw; G.pitch = 0.28; });
+document.getElementById('bView').addEventListener('pointerdown', e => { e.preventDefault(); toggleView(); });
+// 視点:'back'(うしろから)/'front'(正面から。着せ替えを見る用)
+function setView(v) { G.view = v; $('bView').classList.toggle('on', v === 'front'); if (v === 'front') G.camYaw = G.yaw + Math.PI; else G.camYaw = G.yaw; }
+function toggleView() { setView(G.view === 'front' ? 'back' : 'front'); toast(G.view === 'front' ? '正面から見る視点\n(C / もう一度で元にもどる)' : 'うしろからの視点'); }
 // 画面の右半分をなぞると視点を回せる
 let look = null;
 canvas.addEventListener('pointerdown', e => { if (G.device === 'touch' && G.mode === 'play' && e.clientX > window.innerWidth * 0.4) look = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
@@ -1784,7 +1800,7 @@ function update(dt) {
       runUpdate(dt, f > 0, keys.Shift);
       const sp = BASE_SPEED * G.char.speed * runMul() * dt; movePlayer(mx * sp, mz * sp);
     } else runUpdate(dt, false, false);
-    G.camYaw = G.yaw;
+    if (G.view !== 'front') G.camYaw = G.yaw;
   } else {
     // スティックの向き(カメラ基準)に歩いて、その方向を向く
     const mag = Math.min(1, Math.hypot(stick.x, stick.y));
@@ -1795,7 +1811,7 @@ function update(dt) {
       const sp = BASE_SPEED * G.char.speed * mag * runMul() * dt; movePlayer(Math.sin(a) * sp, Math.cos(a) * sp);
       let d = a - G.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); G.yaw += d * Math.min(1, dt * 12);
       // 前に進んでいるときだけ、カメラがゆっくり背中側に回り込む(真横に走るときは回らない)
-      if (!look) { let c = G.yaw - G.camYaw; c = Math.atan2(Math.sin(c), Math.cos(c)); G.camYaw += c * Math.min(1, dt * 1.6 * Math.max(0, -stick.y)); }
+      if (!look && G.view !== 'front') { let c = G.yaw - G.camYaw; c = Math.atan2(Math.sin(c), Math.cos(c)); G.camYaw += c * Math.min(1, dt * 1.6 * Math.max(0, -stick.y)); }
     }
   }
   if (G.device !== 'pc' && Math.hypot(stick.x, stick.y) <= 0.15) runUpdate(dt, false, false);
@@ -1817,6 +1833,13 @@ function update(dt) {
 function placeCamera(dt) {
   const p = G.player; if (!p) return;
   const far = G.sp && G.sp.t < 1.0 + G.sp.targets.length * 0.18 + 1.0;
+  if (G.view === 'front' && !far) {
+    // 正面から:キャラの顔と服がよく見える近さ
+    const want = new THREE.Vector3(p.x - Math.sin(G.camYaw) * 5.5, p.y + 1.9 + G.pitch * 2, p.z - Math.cos(G.camYaw) * 5.5);
+    camera.position.lerp(want, Math.min(1, dt * 6));
+    camera.lookAt(p.x, p.y + 1.2, p.z);
+    return;
+  }
   const dist = far ? 15 : 9.5, h = far ? 10 : 2.5 + G.pitch * 6;
   const want = new THREE.Vector3(p.x - Math.sin(G.camYaw) * dist, p.y + h, p.z - Math.cos(G.camYaw) * dist);
   camera.position.lerp(want, Math.min(1, dt * 8));
@@ -1830,7 +1853,9 @@ function loop(t) {
   else if (G.mode === 'special') updateSpecial(dt);
   else if (G.mode === 'ending' && END) updateEnding(dt);
   else if (G.mode === 'result' && G.fx.length) updateFx(dt);
-  if (G.player && G.mode !== 'ending') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
+  if (G.mode === 'locker') updateLocker(dt);
+  else if (lkHero) closeLockerPreview();
+  if (G.player && G.mode !== 'ending' && G.mode !== 'locker') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
   } catch (err) { if (!loop.warned) { loop.warned = true; console.error(err); } }   // 1回のエラーでゲーム全体が止まらないように
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
@@ -1957,9 +1982,9 @@ $('startGame').onclick = () => startRun(CHARS[picked]);
 function helpHTML(dev) {
   return dev === 'pc'
     ? `<dl class="keys"><dt>W A S D</dt><dd>移動(A・Dは横歩き)</dd><dt>← →</dt><dd>向きを変える</dd><dt>↑ ↓</dt><dd>視点を上下</dd>
-       <dt>Shift</dt><dd>ダッシュ(Wで走り続けても加速)</dd><dt>スペース</dt><dd>ジャンプ(短く押すと小ジャンプ・ダッシュ中は遠くまで)</dd><dt>F / クリック</dt><dd>AIを投げる</dd><dt>E</dt><dd>必殺技「課金パワー」</dd><dt>H / Esc</dt><dd>一時停止・あそびかた</dd><dt>R</dt><dd>この面をやり直す</dd></dl>`
+       <dt>Shift</dt><dd>ダッシュ(Wで走り続けても加速)</dd><dt>スペース</dt><dd>ジャンプ(短く押すと小ジャンプ・ダッシュ中は遠くまで)</dd><dt>F / クリック</dt><dd>AIを投げる</dd><dt>E</dt><dd>必殺技「課金パワー」</dd><dt>H / Esc</dt><dd>一時停止・あそびかた</dd><dt>R</dt><dd>この面をやり直す</dd><dt>C</dt><dd>視点を切りかえ(正面から見る ⇔ うしろから)</dd></dl>`
     : `<dl class="keys"><dt>左のスティック</dt><dd>移動(倒した方向に歩く)</dd><dt>右側をなぞる</dt><dd>視点を回す</dd>
-       <dt>ダッシュ</dt><dd>スティックを最後まで倒し続けると加速</dd><dt>ジャンプ</dt><dd>短く押すと小ジャンプ・ダッシュ中は遠くまで</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>II</dt><dd>一時停止</dd></dl>`;
+       <dt>ダッシュ</dt><dd>スティックを最後まで倒し続けると加速</dd><dt>ジャンプ</dt><dd>短く押すと小ジャンプ・ダッシュ中は遠くまで</dd><dt>AI 投げる</dt><dd>近くの敵を自動で追いかける</dd><dt>課金</dt><dd>必殺技(課金ブロックを叩くと出る)</dd><dt>視点もどす</dt><dd>キャラのうしろに視点を戻す</dd><dt>正面から</dt><dd>キャラを正面から見る(着せ替えがよく見える)。もう一度押すと元にもどる</dd><dt>II</dt><dd>一時停止</dd></dl>`;
 }
 const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍、着地せずに続けて踏むとコンボ)。各ステージに社員証が3枚かくれているよ。速く・ノーミスで・AIを使わずにクリアするほどボーナスが増える。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
 function refreshVoiceBtns() {
@@ -2748,8 +2773,28 @@ function dressHero(root, look, equip) {
 // ---- ロッカー(称号・着せ替え・ガシャ) ----
 let lkTab = 'titles';
 function openLocker(tab) { if (tab) lkTab = tab; renderLocker(); setMode('locker'); }
+// ロッカーの3Dプレビュー(ステージから離れた所に、今の見た目のキャラを立たせて、くるくる回す)
+const LK_POS = new THREE.Vector3(500, 0, 500);
+let lkHero = null, lkFloor = null, lkT = 0;
+function lockerPreview() {
+  if (lkHero) scene.remove(lkHero);
+  const ch = CHARS[Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0))];
+  lkHero = makeHero(ch.look, G.save.equip); lkHero.position.copy(LK_POS); scene.add(lkHero);
+  if (!lkFloor) { lkFloor = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.15, 32), lam('#d9b44a')); lkFloor.position.set(LK_POS.x, -0.075, LK_POS.z); scene.add(lkFloor); }
+  lkFloor.visible = true;
+}
+function updateLocker(dt) {
+  if (!lkHero) lockerPreview();
+  lkT += dt; lkHero.rotation.y = Math.sin(lkT * 0.9) * 0.9;
+  poseHero(lkHero, false, true, dt);
+  const wide = innerWidth >= 760, side = wide ? -1.5 : 0;   // 広い画面では、キャラが右側に来るように
+  camera.position.set(LK_POS.x + side, 1.7, LK_POS.z + 6.2);
+  camera.lookAt(LK_POS.x + side, 1.15, LK_POS.z);
+}
+function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); lkHero = null; } if (lkFloor) lkFloor.visible = false; }
 function renderLocker() {
   const sv = G.save;
+  if (lkHero) lockerPreview();   // つけかえたら、すぐ見た目に反映
   $('lkInfo').textContent = `所持 ${sv.dol}どる ・ 称号 ${sv.titles.length}/${TITLES.length} ・ 着せ替え ${sv.items.length}/${ITEMS.length} ・ 社員証 ${sv.cards.length}/${STAGES.length * 3}` + (G.acct ? '' : '(ゲストは保存されません)');
   $('lkTabT').setAttribute('aria-pressed', String(lkTab === 'titles')); $('lkTabI').setAttribute('aria-pressed', String(lkTab === 'items'));
   const body = $('lkBody');
@@ -2782,6 +2827,10 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 6, date: '2026/10/10', title: '着せ替えが見やすく', items: [
+    'C キー(スマホは「正面から」ボタン)で、キャラを正面から見る視点に切りかえられるようになりました(Web版。PC版は前から C で切りかえ)',
+    'ロッカーで、今の見た目がくるくる回って見られるように(Web版・広い画面のとき)',
+  ] },
   { id: 5, date: '2026/10/10', title: 'ランキングが見やすく', items: [
     'ランキングは10位までを表示。10位より下でも、自分の順位が一番下に出るようになりました',
     '1〜3位は数字と背景の色が金・銀・銅に(Web版)',
