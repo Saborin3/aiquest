@@ -231,11 +231,18 @@ body.touch .kh { display: none; }
 .intro-body .ch b { font-size: 16px; } .intro-body .ch .mult { color: var(--vermilion); font-weight: 800; }
 .intro .linky { background: none; border: 0; color: var(--ink); text-decoration: underline; font-weight: 700; font-size: 14px; margin-left: auto; }
 @media (max-height: 480px) { .intro { padding: 12px 20px; } .intro h2 { font-size: 20px; margin: 0 0 4px; } .intro-body { min-height: 0; font-size: 13px; line-height: 1.5; } .intro-body p { margin: 0 0 6px; } .intro-body .ch { padding: 3px 0; } .intro .row { margin-top: 6px; } }
-.rank-list { margin: 8px 0 0; padding: 0; list-style: none; max-height: 52vh; overflow-y: auto; }
-.rank-list li { display: grid; grid-template-columns: 2.4em 1fr auto; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.rank-list { margin: 6px 0 0; padding: 0; list-style: none; max-height: 62vh; overflow-y: auto; }
+.rank-list li { display: grid; grid-template-columns: 2.4em 1fr auto; gap: 8px; padding: 3px 4px; line-height: 1.35; border-bottom: 1px solid var(--line); font-size: 15px; }
 .rank-list li b { font-variant-numeric: tabular-nums; }
 .rank-list li.me { background: rgba(240, 228, 66, .45); }
 .rank-list .num { font-weight: 800; text-align: right; }
+.rank-list li.top1 .num { color: #9a6b00; } .rank-list li.top2 .num { color: #5f6b76; } .rank-list li.top3 .num { color: #8a4a1f; }
+.rank-list li.top1 { font-weight: 700; background: linear-gradient(90deg, #f7dc7a, #fbefc4); }   /* 1位:金 */
+.rank-list li.top2 { background: linear-gradient(90deg, #d5dbe1, #eef1f4); }                    /* 2位:銀 */
+.rank-list li.top3 { background: linear-gradient(90deg, #e9c3a3, #f6e4d6); }                    /* 3位:銅 */
+.rank-list li.me { box-shadow: inset 5px 0 0 #1e2a44; font-weight: 800; }                      /* 自分(左に線) */
+@media (max-height: 600px) { #ranking .panel h2 { margin-bottom: 4px; } #ranking .rank-note { margin: 4px 0 0; } #ranking .row { margin-top: 8px; } }
+.rank-list li.sep { padding: 0 4px; border-bottom: 0; opacity: .5; line-height: 1; }
 .seg { display: inline-flex; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 2px var(--ink); }
 .seg button { border: 0; background: none; padding: 8px 14px; font-weight: 800; font-size: 14px; color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
@@ -1090,7 +1097,7 @@ function physics(dt) {
   } else {
     G.grounded = false;
     let hit = null;
-    for (const b of G.solids) if (overlapXZ(b, p.x, p.z, HALF_W - 0.1) && b.minY >= p.y + HEIGHT - 0.05 && b.minY <= p.y + HEIGHT + dy) { if (!hit || b.minY < hit.minY) hit = b; }
+    for (const b of G.solids) if (overlapXZ(b, p.x, p.z, HALF_W) && b.minY >= p.y + HEIGHT - 0.05 && b.minY <= p.y + HEIGHT + dy) { if (!hit || b.minY < hit.minY) hit = b; }
     if (hit) { p.y = hit.minY - HEIGHT; G.vy = 0; hitBlock(hit); } else p.y += dy;
   }
   if (p.y < -15) { G.inv = 0; G.safe = 0; hurt('落下'); }
@@ -1195,9 +1202,15 @@ function updateEnemies(dt) {
       const arena = e.boss ? e.arena : e.chase;
       var near = Math.hypot(p.x - e.start.x, p.z - e.start.z) < arena + 6;
       const tx = near ? p.x : e.start.x, tz = near ? p.z : e.start.z, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+      const x0 = m.position.x, z0 = m.position.z;
       if (d > 0.1) { m.position.x += dx / d * e.speed * dt; m.position.z += dz / d * e.speed * dt; }
       const ox = m.position.x - e.start.x, oz = m.position.z - e.start.z, od = Math.hypot(ox, oz);
       if (od > arena) { m.position.x = e.start.x + ox / od * arena; m.position.z = e.start.z + oz / od * arena; }
+      // 机などにはめりこまない(進めない向きだけ止める)
+      const fl = bossFloor(e), nx = m.position.x, nz = m.position.z;
+      m.position.x = x0; m.position.z = z0;
+      if (!bossBlocked(e, fl, nx, z0)) m.position.x = nx;
+      if (!bossBlocked(e, fl, m.position.x, nz)) m.position.z = nz;
       if (e.bar) { e.bar.position.set(m.position.x, m.position.y + e.size / 2 + 0.8, m.position.z); e.bar.quaternion.copy(camera.quaternion); }
       // ボスの反撃「修正依頼」
       if (e.boss && e.shoot && near) { e.shootT -= dt; if (e.shootT <= 0) { e.shootT = e.shoot; bossShoot(e); } }
@@ -1217,7 +1230,9 @@ function updateEnemies(dt) {
     const half = e.size / 2;
     if (Math.abs(p.x - m.position.x) < half + 0.45 && Math.abs(p.z - m.position.z) < half + 0.45 &&
         p.y < m.position.y + half && p.y + HEIGHT > m.position.y - half) {
-      if (G.vy < 0 && p.y > m.position.y + half - Math.max(0.7, half * 0.6)) { if (!e.boss) onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
+      // 上から踏んだ:今の足の高さが上の面の近く、または1フレーム前は上の面より上にいた(動きがカクカクする端末でも踏めるように)
+      const top = m.position.y + half;
+      if (G.vy < 0 && (p.y > top - Math.max(0.7, half * 0.6) || (G.prevY ?? p.y) >= top - 0.05)) { if (!e.boss) onStomp(); hitEnemy(e, 1, true); G.vy = e.size > 1 ? 14 : 10; G.safe = Math.max(G.safe || 0, 0.3); }
       else hurt(e.label.replace('\n', ''));
     }
   }
@@ -1276,6 +1291,7 @@ function ringTex() {
 function useSpecial() {
   if (G.mode !== 'play' || G.special <= 0 || G.sp) return;
   G.special -= 1;
+  if (G.hero) G.hero.visible = true;   // ミスのあとの点滅中でも、演出の間は見えるように
   const p = G.player;
   const targets = G.enemies.filter(e => !e.dead && e.mesh.position.distanceTo(p) < 40)
     .sort((a, b) => a.mesh.position.distanceTo(p) - b.mesh.position.distanceTo(p));
@@ -1784,6 +1800,7 @@ function update(dt) {
   }
   if (G.device !== 'pc' && Math.hypot(stick.x, stick.y) <= 0.15) runUpdate(dt, false, false);
   updateMovers(dt);
+  G.prevY = G.player.y;   // 動く前の高さ(踏みつけの判定に使う)
   physics(dt);
   if (G.grounded) G.combo = 0;
   updateCards(dt);
@@ -2048,8 +2065,9 @@ async function gasPost(body, keepalive = false) {
     return await r.json();
   } finally { clearTimeout(timer); }
 }
-async function gasTop(n, key = 'normal') {
-  const q = key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`;
+const RANK_SHOW = 10;   // ランキングに出す人数
+async function gasTop(n, key = 'normal', me = '') {
+  const q = (key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`) + (me ? `&me=${encodeURIComponent(me)}` : '');
   const r = await fetch(ONLINE.url + q); return r.json();
 }
 function nowStamp() {
@@ -2458,24 +2476,26 @@ function setRankTab(t, stage) {
 async function loadRank() {
   const seq = ++rkSeq, list = $('rankList'), me = ((G.acct || store.get('acct', null)) || {}).name;
   const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + (rkDay || jstDay()) : rkTab;
+  const isMe = name => !!me && String(name).toLowerCase() === String(me).toLowerCase();
+  const empty = '<li><span></span><span>まだ記録がありません</span><span></span></li>';
   const draw = res => {
     if (seq !== rkSeq) return;
-    if (rkTab === 'time') {
-      const rows = ((res.times || {})[rkStage] || []);
-      list.innerHTML = rows.length ? rows.map((e, i) => `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}<span class="sub">${escapeHtml(e.character || '')}</span></span><b>${Number(e.sec).toFixed(1)}秒</b></li>`).join('')
-        : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
-    } else {
-      const rows = res.scores || [];
-      list.innerHTML = rows.length ? rows.map((e, i) =>
-        `<li class="${e.name === me ? 'me' : ''}"><span class="num">${i + 1}.</span><span>${escapeHtml(e.name)}${titleChip(e.title)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`).join('')
-        : '<li><span></span><span>まだ記録がありません</span><span></span></li>';
-    }
+    const time = rkTab === 'time';
+    const rows = (time ? ((res.times || {})[rkStage] || []) : (res.scores || [])).slice(0, RANK_SHOW);
+    const mine = time ? (res.me || {})[rkStage] : res.me;
+    const row = (e, n) => `<li class="${isMe(e.name) ? 'me ' : ''}${n <= 3 ? 'top' + n : ''}"><span class="num">${n}.</span>` + (time
+      ? `<span>${escapeHtml(e.name)}<span class="sub">${escapeHtml(e.character || '')}</span></span><b>${Number(e.sec).toFixed(1)}秒</b></li>`
+      : `<span>${escapeHtml(e.name)}${titleChip(e.title)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`);
+    let html = rows.length ? rows.map((e, i) => row(e, i + 1)).join('') : empty;
+    // 10位より下でも、自分の順位を一番下に出す
+    if (mine && mine.rank && !rows.some(e => isMe(e.name))) html += '<li class="sep"><span></span><span>⋮</span><span></span></li>' + row(mine, mine.rank);
+    list.innerHTML = html;
   };
   const hit = rkCache[key];
   if (hit && Date.now() - hit.t < 30000) return draw(hit.res);
   list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
   try {
-    const res = await gasTop(20, key);
+    const res = await gasTop(RANK_SHOW, key, me);
     rkCache[key] = { t: Date.now(), res }; draw(res);
   } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
@@ -2762,6 +2782,10 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 5, date: '2026/10/10', title: 'ランキングが見やすく', items: [
+    'ランキングは10位までを表示。10位より下でも、自分の順位が一番下に出るようになりました',
+    '1〜3位は数字と背景の色が金・銀・銅に(Web版)',
+  ] },
   { id: 4, date: '2026/10/09', title: '残業モードがもっと手ごわく', items: [
     '残業モードのボスが、一度見つかると足場の上をどこまでも追いかけてくるようになりました(ミスすると持ち場にもどります)',
     'ジャンプ力を見直しました:新人 ★2 ・上司 ★3 ・先輩 ★4。上司もダッシュジャンプで大きいボスを踏めるように',
