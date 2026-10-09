@@ -541,8 +541,8 @@ const STAGES = [
     blocks: [[[-5, 1, 6], [3, 2, 3], COL.desk], [[5, 1, 6], [3, 2, 3], COL.desk], [[0, 0.5, 14], [6, 1, 4], COL.desk],
              [[0, 1, 18], [6, 2, 4], COL.desk], [[6, 3.5, 24], [3, 0.5, 3], COL.plat], [[-6, 3.5, 24], [3, 0.5, 3], COL.plat]],
     qblocks: [[[0, 4, 6], 'coffee'], [[3, 4, 30], 'coffee'], [[-3, 4, 30], 'point']], lifeblocks: [[-6, 7.5, 24]], kakin: [8, 4, 32],
-    enemies: [{ p: [0, 0.5, 9], l: '課題', axis: [1, 0, 0], patrol: 2.5, speed: 3 }, { p: [-6, 0.5, 10], l: 'レポート', axis: [0, 0, 1], patrol: 3, speed: 3 },
-              { p: [6, 0.5, 10], l: '問題', axis: [0, 0, 1], patrol: 3, speed: 3 }, { p: [0, 2.5, 18], l: '議事録', axis: [1, 0, 0], patrol: 2 },
+    enemies: [{ p: [0, 0.5, 9], l: '課題', axis: [1, 0, 0], patrol: 2.5, speed: 3 }, { p: [-6, 0.5, 10], l: 'レポート', axis: [0, 0, 1], patrol: 2, speed: 3 },
+              { p: [6, 0.5, 10], l: '問題', axis: [0, 0, 1], patrol: 2, speed: 3 }, { p: [0, 2.5, 18], l: '議事録', axis: [1, 0, 0], patrol: 2 },
               { p: [6, 4.25, 24], l: '企画書', axis: [1, 0, 0], patrol: 0.8 }, { p: [-8, 0.5, 28], l: '締切', axis: [1, 0, 0], patrol: 3, speed: 4 },
               { p: [8, 0.5, 20], l: '日報', axis: [0, 0, 1], patrol: 4, speed: 3 }],
     boss: { p: [0, 1.5, 44], l: '卒論', hp: 10, size: 3, speed: 2.5, arena: 8 }, goal: [0, 0, 56] },
@@ -577,7 +577,7 @@ const STAGES = [
                [[-5, 6, 90], 3, 3.0, 0], [[5, 6, 90], 3, 3.0, 1.5]],
     checkpoints: [[0, 6, 46], [0, 6, 76]],
     qblocks: [[[-3, 4, 7], 'coffee'], [[3, 4, 7], 'point'], [[0, 10, 51], 'coffee'], [[-5, 10, 81], 'point']], lifeblocks: [[-4, 10, 47]], kakin: [5, 10, 58],
-    enemies: [{ p: [0, 0.5, 9], l: '課題', axis: [1, 0, 0], patrol: 4, speed: 4 }, { p: [5, 0.5, 13], l: '締切', axis: [0, 0, 1], patrol: 2, speed: 5 },
+    enemies: [{ p: [0, 0.5, 9], l: '課題', axis: [1, 0, 0], patrol: 3, speed: 4 }, { p: [5, 0.5, 13], l: '締切', axis: [0, 0, 1], patrol: 1.4, speed: 5 },
               { p: [0, 0.5, 38], l: '催促', speed: 4, chase: 3 }, { p: [4, 6.5, 54], l: '差し戻し', speed: 3.5, chase: 3 },
               { p: [-4, 6.5, 60], l: '仕様変更', axis: [1, 0, 0], patrol: 2.5, speed: 4 }, { p: [0, 6.5, 81], l: '仕様変更', axis: [1, 0, 0], patrol: 6, speed: 5 }],
     boss: { p: [0, 8, 90], l: '社長の\n無茶ぶり', hp: 20, size: 4, speed: 3.5, arena: 6, shoot: 1.6 }, goal: [0, 6, 98] },
@@ -1031,7 +1031,8 @@ function startRun(ch, mode = G.selMode || 'normal') {
   G.ammo = mode === 'normal' ? G.save.ammo : 0; G.special = mode === 'normal' ? G.save.special : 0; G.doru = G.save.dol;
   G.submitted = false; G.sp = null;
   preloadVoices(ch.name, GAME_VOICE_KEYS);
-  if (G.hero) scene.remove(G.hero);
+  if (G.hero) { scene.remove(G.hero); disposeObj(G.hero); }
+  setView('back');   // 新しく始めるときは、うしろからの視点
   G.hero = makeHero(ch.look, G.save.equip); scene.add(G.hero);
   G.player = G.hero.position;
   G.runFrom = mode === 'normal' ? Math.min(G.startStage, G.save.unlocked - 1) : mode === 'daily' ? G.daily.stage : 0;
@@ -1080,8 +1081,9 @@ function physics(dt) {
     const m = G.movers.find(b => b.dy < 0 && Math.abs(b.maxY - b.dy - p.y) < 0.05 && p.x > b.minX - 0.05 && p.x < b.maxX + 0.05 && p.z > b.minZ - 0.05 && p.z < b.maxZ + 0.05);
     if (m) p.y += m.dy;
   }
+  const vy0 = G.vy;
   G.vy = Math.max(G.vy - GRAVITY * dt, -40);
-  const dy = G.vy * dt;
+  const dy = (vy0 + G.vy) / 2 * dt;   // 前と後の速さの平均で動かす(画面の更新が遅くても、ジャンプの高さが変わらないように)
   if (dy <= 0) {
     const top = topUnder(p.x, p.z, p.y + STEP_UP);
     if (top > -Infinity && p.y + dy <= top) {
@@ -1800,7 +1802,7 @@ function update(dt) {
       runUpdate(dt, f > 0, keys.Shift);
       const sp = BASE_SPEED * G.char.speed * runMul() * dt; movePlayer(mx * sp, mz * sp);
     } else runUpdate(dt, false, false);
-    if (G.view !== 'front') G.camYaw = G.yaw;
+    G.camYaw = G.view === 'front' ? G.yaw + Math.PI : G.yaw;   // 正面視点のときは、キャラの顔の前にカメラ
   } else {
     // スティックの向き(カメラ基準)に歩いて、その方向を向く
     const mag = Math.min(1, Math.hypot(stick.x, stick.y));
@@ -2501,6 +2503,7 @@ function setRankTab(t, stage) {
 async function loadRank() {
   const seq = ++rkSeq, list = $('rankList'), me = ((G.acct || store.get('acct', null)) || {}).name;
   const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + (rkDay || jstDay()) : rkTab;
+  const cacheKey = key + '|' + String(me || '').toLowerCase();   // ログインしている人ごとに(自分の順位がちがうので)
   const isMe = name => !!me && String(name).toLowerCase() === String(me).toLowerCase();
   const empty = '<li><span></span><span>まだ記録がありません</span><span></span></li>';
   const draw = res => {
@@ -2513,15 +2516,15 @@ async function loadRank() {
       : `<span>${escapeHtml(e.name)}${titleChip(e.title)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`);
     let html = rows.length ? rows.map((e, i) => row(e, i + 1)).join('') : empty;
     // 10位より下でも、自分の順位を一番下に出す
-    if (mine && mine.rank && !rows.some(e => isMe(e.name))) html += '<li class="sep"><span></span><span>⋮</span><span></span></li>' + row(mine, mine.rank);
+    if (mine && mine.rank && !rows.some(e => isMe(e.name))) html += (mine.rank > rows.length ? '<li class="sep"><span></span><span>⋮</span><span></span></li>' : '') + row(mine, mine.rank);
     list.innerHTML = html;
   };
-  const hit = rkCache[key];
+  const hit = rkCache[cacheKey];
   if (hit && Date.now() - hit.t < 30000) return draw(hit.res);
   list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
   try {
     const res = await gasTop(RANK_SHOW, key, me);
-    rkCache[key] = { t: Date.now(), res }; draw(res);
+    rkCache[cacheKey] = { t: Date.now(), res }; draw(res);
   } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
 document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.onclick = () => { setRankTab(b.dataset.t); b.blur(); });
@@ -2776,10 +2779,16 @@ function openLocker(tab) { if (tab) lkTab = tab; renderLocker(); setMode('locker
 // ロッカーの3Dプレビュー(ステージから離れた所に、今の見た目のキャラを立たせて、くるくる回す)
 const LK_POS = new THREE.Vector3(500, 0, 500);
 let lkHero = null, lkFloor = null, lkT = 0, lkLight = null;
+// 使わなくなった3Dモデルの形と色をGPUから片づける(作り直すたびにたまっていかないように)
+function disposeObj(obj) { obj.traverse(o => { if (o.isMesh) { o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); } }); }
+let lkKey = '';
 function lockerPreview() {
-  if (lkHero) scene.remove(lkHero);
-  const ch = CHARS[Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0))];
-  lkHero = makeHero(ch.look, G.save.equip); lkHero.position.copy(LK_POS); scene.add(lkHero);
+  const ch = CHARS[Math.max(0, Math.min(CHARS.length - 1, picked))];   // キャラ選択でえらんでいるキャラ
+  const key = ch.name + JSON.stringify(G.save.equip || {});
+  if (!lkHero || key !== lkKey) {      // 見た目が変わったときだけ作り直す
+    if (lkHero) { scene.remove(lkHero); disposeObj(lkHero); }
+    lkHero = makeHero(ch.look, G.save.equip); lkHero.position.copy(LK_POS); scene.add(lkHero); lkKey = key;
+  }
   if (!lkFloor) { lkFloor = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.15, 32), lam('#d9b44a')); lkFloor.position.set(LK_POS.x, -0.075, LK_POS.z); scene.add(lkFloor); }
   lkFloor.visible = true;
   // 正面から照らすライト(ふだんの光はうしろからなので、顔や服が暗く見えないように)
@@ -2801,7 +2810,9 @@ function updateLocker(dt) {
   camera.position.set(LK_POS.x + side, 1.7, LK_POS.z + 6.2);
   camera.lookAt(LK_POS.x + side, 1.15, LK_POS.z);
 }
-function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); lkHero = null; } if (lkFloor) lkFloor.visible = false; if (lkLight) lkLight.visible = false; }
+function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); disposeObj(lkHero); lkHero = null; }
+  if (G.player) placeCamera(1);   // カメラはすぐ元の場所へ(ステージの上を飛んでいかないように)
+  if (lkFloor) lkFloor.visible = false; if (lkLight) lkLight.visible = false; }
 function renderLocker() {
   const sv = G.save;
   if (lkHero) lockerPreview();   // つけかえたら、すぐ見た目に反映
