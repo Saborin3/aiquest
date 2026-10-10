@@ -545,7 +545,7 @@ const STAGES = [
               { p: [6, 0.5, 10], l: '問題', axis: [0, 0, 1], patrol: 2, speed: 3 }, { p: [0, 2.5, 18], l: '議事録', axis: [1, 0, 0], patrol: 2 },
               { p: [6, 4.25, 24], l: '企画書', axis: [1, 0, 0], patrol: 0.8 }, { p: [-8, 0.5, 28], l: '締切', axis: [1, 0, 0], patrol: 3, speed: 4 },
               { p: [8, 0.5, 20], l: '日報', axis: [0, 0, 1], patrol: 4, speed: 3 }],
-    boss: { p: [0, 1.5, 44], l: '卒論', hp: 10, size: 3, speed: 2.5, arena: 8 }, goal: [0, 0, 56] },
+    boss: { p: [0, 1.5, 44], l: '研修\nレポート', hp: 10, size: 3, speed: 2.5, arena: 8 }, goal: [0, 0, 56] },
   { name: '決算期', floor: '#91979f', sky: '#347cbd', hallu: 0.22, ai: 22,
     floors: [[[0, -0.5, 2.5], [30, 1, 25]], [[0, -0.5, 26.5], [30, 1, 17]], [[0, -0.5, 58], [30, 1, 40]]],
     blocks: [[[0, 1, 8], [4, 2, 2], COL.desk], [[-6, 0.5, 22], [3, 1, 3], COL.desk], [[6, 1, 28], [3, 2, 3], COL.desk],
@@ -601,7 +601,7 @@ const BOSS_GUARD_TIME = 2.0; // ガードしている秒数(AIをはね返す。
 const SPECIAL_DMG = 5;       // 必殺技「課金パワー」のダメージ
 const LABEL_COLORS = {
   '課題': ['#fff0c8', '#a02800'], 'レポート': ['#ffe6e6', '#aa0000'], '問題': ['#e6f0ff', '#003ca0'], '議事録': ['#ebebeb', '#282828'],
-  '企画書': ['#e6ffe6', '#006e28'], '締切': ['#ffd2d2', '#c80000'], '日報': ['#fffadc', '#785a00'], '卒論': ['#e6dcff', '#50008c'],
+  '企画書': ['#e6ffe6', '#006e28'], '締切': ['#ffd2d2', '#c80000'], '日報': ['#fffadc', '#785a00'], '研修\nレポート': ['#e6dcff', '#50008c'],
   '稟議書': ['#fff0dc', '#8c4600'], '経費精算': ['#dcf5ff', '#005078'], '上司の\nレビュー': ['#ffe6c8', '#8c2800'],
   '催促': ['#ffdcdc', '#b40000'], '差し戻し': ['#f0e6ff', '#5a1e96'], '仕様変更': ['#dcffeb', '#00643c'],
   '炎上案件': ['#ffd2b4', '#b42800'], '社長の\n無茶ぶり': ['#ffe1e1', '#8c0000'],
@@ -1647,10 +1647,14 @@ function checkGoal() {
   sfx.clear(); say(G.char.name, 'clear');
   stageCleared();
 }
+// 自己ベスト(タイトル画面に出す)は、ニックネームごとに分けて覚える(1つの端末で何人も遊んでもまざらないように)
+function bestKey(acct) { return acct && acct.name ? String(acct.name).toLowerCase() : '(guest)'; }
+function bestOf(acct) { const all = store.get('bests', {}) || {}; return all[bestKey(acct)] || null; }
+function setBest(acct, rec) { const all = store.get('bests', {}) || {}; all[bestKey(acct)] = rec; store.set('bests', all); }
 function saveBest() {
   if (G.playMode !== 'normal') return;
-  const best = store.get('best', null);
-  if (!best || G.score > best.score) store.set('best', { score: G.score, char: G.char.name, stage: G.stage + 1 });
+  const best = bestOf(G.acct);
+  if (!best || G.score > best.score) setBest(G.acct, { score: G.score, char: G.char.name, stage: G.stage + 1 });
 }
 
 // ---------------- 入力(PC) ----------------
@@ -1914,8 +1918,10 @@ function showBanner(text, sec) {
 
 // タイトル
 function refreshTitle() {
-  const best = store.get('best', null);
-  $('bestLine').textContent = best ? `自己ベスト:${best.score}点(${best.char})` : '自己ベスト:まだ記録なし';
+  // 前にログインした人(なければゲスト)の自己ベスト
+  const acct = G.acct || store.get('acct', null), best = bestOf(acct);
+  const who = acct && acct.name ? `${acct.name} の` : 'ゲストの';
+  $('bestLine').textContent = best && best.score > 0 ? `${who}自己ベスト:${best.score}点${best.char ? `(${best.char})` : ''}` : `${who}自己ベスト:まだ記録なし`;
   const touchy = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
   $('goTouch').classList.toggle('suggest', touchy); $('goPC').classList.toggle('suggest', !touchy);
   const d = new Date(); $('tcClock').textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -2204,7 +2210,7 @@ async function sendScore(acct) {
     if (res.ok) {
       Object.keys(rkCache).forEach(k => delete rkCache[k]);
       if (!here()) return;
-      $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位(${res.total}人中)</p>
+      $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位${res.rank <= 3 ? '! 表彰台入り!' : res.rank <= 10 ? '! トップ10入り!' : ''}</p>
         <button class="linky" id="rkView">ランキングを見る</button>`;
       $('rkView').onclick = () => openRanking();
     } else if (res.error === 'not owner') {
@@ -2233,6 +2239,8 @@ function openLogin(forceForm = false) {
 }
 function startWith(acct, save, msg, created = false) {
   G.acct = acct; G.save = fixSave(save);
+  // サーバーのハイスコアの方が高ければ、タイトルの自己ベストもそれに合わせる(ほかの端末で出した記録)
+  if (acct && G.save.best > ((bestOf(acct) || {}).score || 0)) setBest(acct, { score: G.save.best, char: '' });
   G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; G.score = 0; G.playMode = 'normal';
   G.selMode = store.get('selMode', 'normal');
   picked = Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0));   // 最初はいつものキャラを選んでおく
@@ -2848,6 +2856,10 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 7, date: '2026/10/10', title: '繁忙期のボスが「研修レポート」に', items: [
+    '繁忙期のボス「卒論」を「研修レポート」に変えました(社会人なので)',
+    'タイトル画面の自己ベストが、ニックネームごとに出るようになりました(Web版。1つの端末で何人も遊んでもまざりません)',
+  ] },
   { id: 6, date: '2026/10/10', title: '着せ替えが見やすく', items: [
     'C キー(スマホは「正面から」ボタン)で、キャラを正面から見る視点に切りかえられるようになりました(Web版。PC版は前から C で切りかえ)',
     'ロッカーで、今の見た目がくるくる回って見られるように(Web版・広い画面のとき)',
