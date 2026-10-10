@@ -1919,7 +1919,7 @@ function showBanner(text, sec) {
 // タイトル
 function refreshTitle() {
   // 前にログインした人(なければゲスト)の自己ベスト
-  const acct = G.acct || store.get('acct', null), best = bestOf(acct);
+  const acct = G.session ? G.acct : store.get('acct', null), best = bestOf(acct);   // 遊んでいる人(ゲストならゲスト)。まだなら前にログインした人
   const who = acct && acct.name ? `${acct.name} の` : 'ゲストの';
   $('bestLine').textContent = best && best.score > 0 ? `${who}自己ベスト:${best.score}点${best.char ? `(${best.char})` : ''}` : `${who}自己ベスト:まだ記録なし`;
   const touchy = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
@@ -2238,7 +2238,7 @@ function openLogin(forceForm = false) {
   setTimeout(() => (quick ? $('lgContinue') : $('lgName')).focus(), 60);
 }
 function startWith(acct, save, msg, created = false) {
-  G.acct = acct; G.save = fixSave(save);
+  G.acct = acct; G.save = fixSave(save); G.session = true;   // ログイン(またはゲスト)して遊んでいる
   // サーバーのハイスコアの方が高ければ、タイトルの自己ベストもそれに合わせる(ほかの端末で出した記録)
   if (acct && G.save.best > ((bestOf(acct) || {}).score || 0)) setBest(acct, { score: G.save.best, char: '' });
   G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; G.score = 0; G.playMode = 'normal';
@@ -2276,7 +2276,7 @@ async function continueLogin() {
     const res = await gasPost({ action: 'load', name: acct.name, token: acct.token });
     if (G.mode !== 'login') return;
     if (res.ok) startWith(acct, res.save, `おかえりなさい、${acct.name}!`);
-    else { store.set('acct', null); openLogin(true); lgMsg('もう一度パスワードを入れてね', 'bad'); }
+    else { store.set('acct', null); G.acct = null; G.session = false; openLogin(true); lgMsg('もう一度パスワードを入れてね', 'bad'); }
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgContinue').disabled = false; }
 }
@@ -2300,7 +2300,7 @@ function persist(from = 'play', keepalive = false) {
   else {
     sv.dol = G.doru;
     if (G.playMode === 'overtime') sv.bestOt = Math.max(sv.bestOt || 0, G.score);
-    else if (G.playMode !== 'daily') { sv.ammo = G.ammo; sv.special = G.special; sv.best = Math.max(sv.best || 0, G.score); }
+    else if (G.playMode !== 'daily') { sv.ammo = G.ammo; sv.special = G.special; sv.best = Math.max(sv.best || 0, G.score); if (G.char) saveBest(); }
   }
   if (!G.acct) return;
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
@@ -2509,7 +2509,7 @@ function setRankTab(t, stage) {
   loadRank();
 }
 async function loadRank() {
-  const seq = ++rkSeq, list = $('rankList'), me = ((G.acct || store.get('acct', null)) || {}).name;
+  const seq = ++rkSeq, list = $('rankList'), me = ((G.session ? G.acct : store.get('acct', null)) || {}).name;
   const key = rkTab === 'time' ? 'time' : rkTab === 'daily' ? 'daily-' + (rkDay || jstDay()) : rkTab;
   const cacheKey = key + '|' + String(me || '').toLowerCase();   // ログインしている人ごとに(自分の順位がちがうので)
   const isMe = name => !!me && String(name).toLowerCase() === String(me).toLowerCase();
@@ -2706,7 +2706,7 @@ function recordTime(sec) {
   if (G.acct && sec >= [2, 4, 5, 6, 7][i]) {
     const body = { action: 'time', name: G.acct.name, token: G.acct.token, stage: i + 1, sec, character: G.char.name, date: nowStamp() };
     keepScore(body); sendingScores.add(scoreKey(body));
-    gasPost(body).then(res => { if (res.ok || (res.error !== 'busy' && res.error !== 'not owner')) dropScore(body); })
+    gasPost(body).then(res => { if (res.ok) Object.keys(rkCache).forEach(k => delete rkCache[k]); if (res.ok || (res.error !== 'busy' && res.error !== 'not owner')) dropScore(body); })
       .catch(() => {}).finally(() => sendingScores.delete(scoreKey(body)));
   }
   return `${sec.toFixed(1)}秒 自己ベスト!`;
