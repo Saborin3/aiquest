@@ -21,10 +21,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---------------------------------------------------------------------------
-Exception: voice files
-
-The audio files in the "voices" folder were generated with VOICEVOX and are
-NOT covered by the MIT License above. They are subject to the terms of use of
-VOICEVOX and of each voice character (白上虎太郎, 春日部つむぎ, 青山龍星,
-玄野武宏, 剣崎雌雄). If you reuse or redistribute them, follow those terms,
-including the credit notation "VOICEVOX:<character name>".
