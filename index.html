@@ -221,7 +221,7 @@ body.touch .kh { display: none; }
 .rank-box .msg.bad { color: var(--vermilion); }
 .rank-box .msg.good { color: var(--green); }
 .rank-box .linky { background: none; border: 0; padding: 4px 0; color: var(--ink); text-decoration: underline; font-size: 13px; font-weight: 700; }
-.rank-note { font-size: 13px; opacity: .75; }
+.rank-note { font-size: 13px; color: rgba(29, 36, 51, .75); }
 .intro { max-width: 640px; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; }
 .intro-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; opacity: .7; margin: 0 0 4px !important; }
 .intro-body { min-height: 13.5em; font-size: 15px; line-height: 1.75; }
@@ -292,6 +292,11 @@ body.touch .kh { display: none; }
 .lk-slot { font-weight: 800; font-size: 13px; margin: 10px 0 2px; opacity: .7; }
 .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .ttl { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--yellow); border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+.ttl.champ { background: #c8102e; color: #fff; }                                              /* 第〇回王者だけ赤 */
+.lk-item b.champ { color: #c8102e; }
+.rank-note .prev { display: block; margin-top: 2px; }
+.rank-note .prize { display: block; margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: #fdecee; color: #8a0a1f; font-weight: 800; opacity: 1; }
+.rank-note .prize .ttl { margin: 0 2px; }
 .rank-list .sub { font-size: 12px; opacity: .65; margin-left: 6px; }
 @media (max-height: 400px) {
   .sheet h2 { font-size: 19px; margin-bottom: 4px; } .cs-info { font-size: 12.5px; margin-bottom: 2px; }
@@ -371,8 +376,10 @@ body.touch .kh { display: none; }
     <h2>今日は誰で出勤する?</h2>
     <div class="cards" id="cards"></div>
     <div class="cs-row">
+    <div class="cs-mode hidden" id="csYearRow">年<span class="kh"> [Y]</span>
+      <span class="seg" id="csYear" role="group" aria-label="年"><button data-y="1">1年目</button><button data-y="2">2年目</button></span></div>
     <div class="cs-mode">モード<span class="kh"> [M]</span>
-      <span class="seg" id="csMode" role="group" aria-label="モード"><button data-m="normal">通常</button><button data-m="overtime">残業</button><button data-m="daily">今日のお題</button><button data-m="year2" class="hidden">2年目</button></span></div>
+      <span class="seg" id="csMode" role="group" aria-label="モード"><button data-m="normal">通常</button><button data-m="overtime">残業</button><button data-m="daily">今日のお題</button></span></div>
     <div class="cs-stage" id="csStage"><button class="btn" id="stPrev" aria-label="前のステージ">◀</button><span id="stName"></span><button class="btn" id="stNext" aria-label="次のステージ">▶</button></div>
     </div>
     <p id="csModeNote" class="hidden"></p>
@@ -479,7 +486,7 @@ body.touch .kh { display: none; }
 <section id="ranking" class="screen dim hidden" aria-label="ランキング">
   <div class="panel">
     <h2>ランキング</h2>
-    <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="normal">通常</button><button data-t="overtime">残業</button><button data-t="daily">今日のお題</button><button data-t="year2" class="hidden">2年目</button><button data-t="time">タイム</button></div>
+    <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="season">今期</button><button data-t="normal">歴代</button><button data-t="overtime">残業</button><button data-t="daily">今日のお題</button><button data-t="year2" class="hidden">2年目</button><button data-t="year2ot" class="hidden">2年目残業</button><button data-t="time">タイム</button></div>
     <div class="tabs small hidden" id="rkStages" role="group" aria-label="ステージ"><button data-s="1">ステージ1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button></div>
     <p class="rank-note" id="rkNote">PC版(exe)とWeb版、みんなの自己ベスト</p>
     <ol id="rankList" class="rank-list"></ol>
@@ -609,15 +616,24 @@ const LABEL_COLORS = {
 // ---------------- 2年目編(ステージ6〜10)。まだテスト中なので、テスト用アカウントでログインしたときだけ遊べる ----------------
 // データは PC版の stage2_data.py の YEAR2_JSON をそのまま貼ったもの(直すときは向こうを直して貼り直す)
 const TESTERS = ['k01'];   // テスト用アカウント(小文字)
-const YEAR2 = {"labels":{"通知":[[230,245,255],[0,90,170]],"チャット":[[225,255,235],[0,120,60]],"既読スルー":[[245,245,245],[90,90,90]],"回線落ち":[[60,60,70],[255,220,80]],"Web会議":[[30,70,140],[255,255,255]],"段ボール":[[205,160,110],[80,45,10]],"配線":[[40,40,40],[240,228,66]],"備品リスト":[[255,250,220],[120,90,0]],"段ボールの山":[[180,130,80],[255,255,255]],"よっぱらい\n上司":[[255,200,200],[170,0,40]],"二次会の\n誘い":[[255,225,245],[160,0,110]],"一発芸":[[255,240,180],[200,80,0]],"幹事の\n仕事":[[230,240,255],[40,60,160]],"幹事":[[120,30,30],[255,230,120]],"出し物\nリクエスト":[[204,121,167],[255,255,255]],"急ぎの\n電話":[[255,215,215],[190,0,0]],"明日までの\n資料":[[235,235,235],[40,40,40]],"残業命令":[[60,0,0],[255,200,200]],"エレベーター\n待ち":[[220,230,240],[50,60,80]],"自己評価\nシート":[[255,250,220],[120,90,0]],"目標設定":[[225,255,235],[0,110,60]],"役員":[[30,30,30],[230,200,120]],"評価シート":[[240,225,255],[90,0,140]],"360度\nフィードバック":[[220,230,255],[40,40,160]],"評価面談":[[20,20,40],[255,215,0]],"評価\nコメント":[[213,94,0],[255,255,255]],"差し戻し":[[255,220,240],[180,0,90]],"お土産":[[255,235,205],[150,70,0]]},"stages":[{"name":"リモートワークの日","floor":"#9ba7b8","sky":"#4a74b0","hallucination":0.26,"reward":800,"ai":16,"par":55,"floors":[[[0,-0.5,5],[24,1,30]],[[0,-0.5,62],[24,1,40]]],"blocks":[[[6,1,12],[3,2,3],"#4e3b2a"],[[-6,1,8],[3,2,3],"#4e3b2a"]],"blinkers":[[[0,-0.25,23],[3,0.5,3],2.0,1.2,2.0],[[0,-0.25,27],[3,0.5,3],2.0,1.2,1.5],[[0,-0.25,31],[3,0.5,3],2.0,1.2,1.0],[[0,-0.25,35],[3,0.5,3],2.0,1.2,0.5],[[0,-0.25,39],[3,0.5,3],2.0,1.2,0.0]],"qblocks":[[[3,4,4],"coffee"],[[-3,4,4],"point"],[[0,4,48],"coffee"],[[-6,4,16],"point"],[[6,4,60],"point"]],"lifeblocks":[[6,5,12]],"kakin":[-6,4,50],"checkpoints":[[0,0,45]],"enemies":[{"position":[0,0.5,8],"label":"通知","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,14],"label":"チャット","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[8,0.5,4],"label":"既読スルー","speed":4.0,"chase":5},{"position":[4,0.5,17],"label":"チャット","axis":[1,0,0],"patrol":3,"speed":4.5},{"position":[0,0.5,52],"label":"回線落ち","axis":[1,0,0],"patrol":7,"speed":6.5},{"position":[-7,0.5,58],"label":"通知","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[7,0.5,56],"label":"既読スルー","speed":4.0,"chase":4}],"boss":{"position":[0,1.5,70],"label":"Web会議","hp":14,"size":3,"speed":3,"arena":7,"freeze":[3.5,1.6],"shoot_interval":2.6,"shot_label":"通知","far_guard":10},"goal":[0,0,80]},{"name":"オフィス移転","floor":"#a39a8c","sky":"#3f86c4","hallucination":0.28,"reward":900,"ai":18,"par":65,"floors":[[[0,-0.5,40],[24,1,100]]],"conveyors":[[[0,0.05,14],[14,0.1,8],[0,0,-1],4.5],[[0,0.05,32],[16,0.1,6],[1,0,0],5],[[0,0.05,48],[14,0.1,8],[0,0,-1],5]],"blocks":[[[-7,0.75,22],[2,1.5,2],"#b5835a"],[[7,0.75,24],[2,1.5,2],"#b5835a"],[[-4,1,40],[2,2,2],"#b5835a"],[[5,1,56],[3,2,3],"#b5835a"]],"droppers":[[[3,0,38],3,2.0,0,"段ボール"],[[-3,0,46],3,2.0,1.0,"段ボール"],[[3,0,52],3,2.0,0.5,"段ボール"],[[-3,0,60],3,2.0,1.1,"段ボール"],[[3,0,63],3,2.2,0.4,"段ボール"]],"qblocks":[[[0,4,6],"point"],[[-3,4,30],"coffee"],[[5,5,56],"coffee"],[[3,4,26],"point"],[[-5,4,70],"point"]],"lifeblocks":[[-4,5.5,40]],"kakin":[8,4,44],"checkpoints":[[0,0,66]],"enemies":[{"position":[0,0.5,20],"label":"段ボール","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,34],"label":"配線","axis":[0,0,1],"patrol":2,"speed":4.5},{"position":[6,0.5,44],"label":"備品リスト","speed":4.5,"chase":5},{"position":[-6,0.5,10],"label":"備品リスト","speed":4.0,"chase":4},{"position":[0,0.5,59],"label":"配線","axis":[1,0,0],"patrol":2.5,"speed":5.5}],"boss":{"position":[0,2,78],"label":"段ボールの山","hp":20,"size":4,"speed":3,"arena":7,"split":"段ボール","far_guard":10},"goal":[0,0,88]},{"name":"社員旅行","floor":"#c9b77c","sky":"#3b2f63","hallucination":0.3,"reward":1000,"ai":20,"par":70,"floors":[[[0,-0.5,37.5],[26,1,95]]],"blocks":[[[-6,0.4,10],[3,0.8,2],"#7a3b1e"],[[6,0.4,14],[3,0.8,2],"#7a3b1e"],[[-6,0.4,26],[3,0.8,2],"#7a3b1e"],[[6,0.4,30],[3,0.8,2],"#7a3b1e"],[[0,0.75,48],[10,1.5,4],"#8b5a2b"]],"qblocks":[[[0,4,6],"coffee"],[[-3,5.5,48],"point"],[[3,5.5,48],"coffee"],[[6,4,20],"point"],[[-4,4,58],"point"]],"lifeblocks":[[0,6.3,48]],"kakin":[[-10,4,36],[10,4,64]],"checkpoints":[[0,0,53]],"enemies":[{"position":[4,0.5,20],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[-4,0.5,38],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[3,0.5,60],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.5},{"position":[-6,0.5,6],"label":"よっぱらい\n上司","kind":"drunk","patrol":4,"speed":3.5},{"position":[7,0.5,40],"label":"よっぱらい\n上司","kind":"drunk","patrol":4.5,"speed":4.0},{"position":[-9,0.5,18],"label":"二次会の\n誘い","speed":4.5,"chase":5},{"position":[0,0.5,32],"label":"一発芸","axis":[1,0,0],"patrol":7,"speed":5.5},{"position":[9,0.5,46],"label":"幹事の\n仕事","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[-6,0.5,62],"label":"一発芸","axis":[1,0,0],"patrol":5,"speed":5.5},{"position":[8,0.5,24],"label":"二次会の\n誘い","speed":4.5,"chase":4},{"position":[0,0.5,55],"label":"よっぱらい\n上司","kind":"drunk","patrol":5,"speed":4.5},{"position":[-6,0.5,66],"label":"よっぱらい\n上司","kind":"drunk","patrol":3.5,"speed":4},{"position":[6,0.5,52],"label":"二次会の\n誘い","speed":4.5,"chase":5}],"boss":{"position":[0,2,73],"label":"幹事","hp":20,"size":4,"speed":3.5,"arena":8,"shoot_interval":1.3,"shot_label":"出し物\nリクエスト","far_guard":10},"goal":[0,0,82],"droppers":[[[-3,0,42],3,2.0,0,"お土産"],[[3,0,44],3,2.0,1.0,"お土産"],[[0,0,66],4,2.2,0.5,"お土産"]]},{"name":"終電ダッシュ","floor":"#5d6470","sky":"#141a3a","hallucination":0.3,"reward":1100,"ai":16,"par":50,"time_limit":30,"floors":[[[0,-0.5,10],[20,1,40]],[[0,-0.5,55],[20,1,30]],[[0,-0.5,87.5],[20,1,25]]],"blocks":[[[-5,1,8],[3,2,3],"#4e3b2a"],[[5,1,16],[3,2,3],"#4e3b2a"],[[-4,1,24],[3,2,2],"#4e3b2a"],[[6,0.4,84],[3,0.8,1],"#3a5a8a"],[[0,2,101.5],[20,4,3],"#2e8b57"]],"movers":[[[0,-0.25,35],[3,0.5,3],[0,0,1],3,1.0,0]],"conveyors":[[[0,0.05,50],[12,0.1,8],[0,0,-1],5],[[0,0.05,62],[12,0.1,6],[0,0,-1],6]],"qblocks":[[[0,4,4],"coffee"],[[0,4,45],"point"],[[-4,4,78],"coffee"],[[5,4,8],"point"],[[-4,4,68],"point"]],"lifeblocks":[[5,5,16]],"kakin":[-8,4,28],"checkpoints":[[0,0,42],[0,0,77]],"enemies":[{"position":[0,0.5,12],"label":"急ぎの\n電話","speed":4.5,"chase":4},{"position":[6,0.5,24],"label":"明日までの\n資料","axis":[1,0,0],"patrol":2,"speed":4.5},{"position":[-8,0.5,56],"label":"残業命令","axis":[0,0,1],"patrol":4,"speed":6.5},{"position":[7,0.5,46],"label":"エレベーター\n待ち","axis":[1,0,0],"patrol":1,"speed":2.0},{"position":[8,0.5,62],"label":"残業命令","axis":[0,0,1],"patrol":3,"speed":6.5},{"position":[0,0.5,84],"label":"急ぎの\n電話","speed":5.0,"chase":5},{"position":[-5,0.5,30],"label":"急ぎの\n電話","speed":5,"chase":4},{"position":[5,0.5,90],"label":"残業命令","axis":[1,0,0],"patrol":4,"speed":6}],"boss":null,"goal":[0,0,97],"droppers":[[[-3,0,80],3,2.0,0,"明日までの\n資料"],[[3,0,88],3,2.0,1.0,"明日までの\n資料"],[[0,0,58],3,1.8,0.6,"明日までの\n資料"],[[-3,0,92],3,1.8,0.3,"明日までの\n資料"]],"blinkers":[[[0,-0.25,72.5],[3,0.5,3],1.0,1.0,0.0]]},{"name":"人事評価","floor":"#6b4f3a","sky":"#1d2a44","hallucination":0.34,"reward":1500,"ai":26,"par":95,"floors":[[[0,-0.5,7.5],[18,1,35]],[[0,-0.5,49],[18,1,24]],[[0,5.5,82],[18,1,36]]],"blocks":[[[-5,1,6],[3,2,3],"#4e3b2a"],[[5,1,14],[3,2,3],"#4e3b2a"],[[-6,7,70],[2,2,2],"#4e3b2a"]],"blinkers":[[[0,-0.25,27],[3,0.5,3],1.6,1.4,1.2],[[0,-0.25,31],[3,0.5,3],1.6,1.4,0.6],[[0,-0.25,35],[3,0.5,3],1.6,1.4,0.0]],"conveyors":[[[0,0.05,48],[12,0.1,10],[0,0,-1],5]],"movers":[[[0,2.75,62.5],[3,0.5,3],[0,1,0],3,0.6,-1.5708]],"droppers":[[[-5,6,77],3,2.2,0,"差し戻し"],[[5,6,77],3,2.2,1.1,"差し戻し"],[[0,6,72],3,2.4,0.6,"差し戻し"]],"qblocks":[[[0,4,4],"coffee"],[[0,4,52],"point"],[[-4,10,82],"coffee"],[[-4,4,20],"point"],[[4,10,68],"point"]],"lifeblocks":[[5,5,14]],"kakin":[6,10,70],"checkpoints":[[0,0,40],[0,6,66]],"enemies":[{"position":[0,0.5,9],"label":"自己評価\nシート","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[-6,0.5,19],"label":"目標設定","speed":4.0,"chase":4},{"position":[6,0.5,43],"label":"役員","kind":"drunk","patrol":2.5,"speed":2},{"position":[-6,0.5,54],"label":"評価シート","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[0,6.5,71],"label":"360度\nフィードバック","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[5,0.5,56],"label":"役員","kind":"drunk","patrol":2.5,"speed":2.5}],"boss":{"position":[0,8,90],"label":"評価面談","hp":22,"size":4,"speed":3.5,"arena":6,"shoot_interval":1.3,"radial":2.2,"shot_label":"評価\nコメント","far_guard":9,"enrage":1.4},"goal":[0,6,98]}]};
+const YEAR2 = {"labels":{"通知":[[230,245,255],[0,90,170]],"チャット":[[225,255,235],[0,120,60]],"既読スルー":[[245,245,245],[90,90,90]],"回線落ち":[[60,60,70],[255,220,80]],"Web会議":[[30,70,140],[255,255,255]],"段ボール":[[205,160,110],[80,45,10]],"配線":[[40,40,40],[240,228,66]],"備品リスト":[[255,250,220],[120,90,0]],"段ボールの山":[[180,130,80],[255,255,255]],"よっぱらい\n上司":[[255,200,200],[170,0,40]],"二次会の\n誘い":[[255,225,245],[160,0,110]],"一発芸":[[255,240,180],[200,80,0]],"幹事の\n仕事":[[230,240,255],[40,60,160]],"幹事":[[120,30,30],[255,230,120]],"出し物\nリクエスト":[[204,121,167],[255,255,255]],"急ぎの\n電話":[[255,215,215],[190,0,0]],"明日までの\n資料":[[235,235,235],[40,40,40]],"残業命令":[[60,0,0],[255,200,200]],"エレベーター\n待ち":[[220,230,240],[50,60,80]],"自己評価\nシート":[[255,250,220],[120,90,0]],"目標設定":[[225,255,235],[0,110,60]],"役員":[[30,30,30],[230,200,120]],"評価シート":[[240,225,255],[90,0,140]],"360度\nフィードバック":[[220,230,255],[40,40,160]],"評価面談":[[20,20,40],[255,215,0]],"評価\nコメント":[[213,94,0],[255,255,255]],"差し戻し":[[255,220,240],[180,0,90]],"お土産":[[255,235,205],[150,70,0]]},"stages":[{"name":"リモートワークの日","floor":"#9ba7b8","sky":"#4a74b0","hallucination":0.26,"reward":800,"ai":16,"par":55,"floors":[[[0,-0.5,5],[24,1,30]],[[0,-0.5,62],[24,1,40]]],"blocks":[[[6,1,12],[3,2,3],"#4e3b2a"],[[-6,1,8],[3,2,3],"#4e3b2a"]],"blinkers":[[[0,-0.25,23],[3,0.5,3],2.0,1.2,2.0],[[0,-0.25,27],[3,0.5,3],2.0,1.2,1.5],[[0,-0.25,31],[3,0.5,3],2.0,1.2,1.0],[[0,-0.25,35],[3,0.5,3],2.0,1.2,0.5],[[0,-0.25,39],[3,0.5,3],2.0,1.2,0.0]],"qblocks":[[[3,4,4],"coffee"],[[-3,4,4],"point"],[[0,4,48],"coffee"],[[-6,4,16],"point"],[[6,4,60],"point"]],"lifeblocks":[[6,5,12]],"kakin":[-6,4,50],"checkpoints":[[0,0,45]],"enemies":[{"position":[0,0.5,8],"label":"通知","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,14],"label":"チャット","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[8,0.5,4],"label":"既読スルー","speed":4.0,"chase":5},{"position":[4,0.5,17],"label":"チャット","axis":[1,0,0],"patrol":3,"speed":4.5},{"position":[0,0.5,52],"label":"回線落ち","axis":[1,0,0],"patrol":7,"speed":6.5},{"position":[-7,0.5,58],"label":"通知","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[7,0.5,56],"label":"既読スルー","speed":4.0,"chase":4}],"boss":{"position":[0,1.5,70],"label":"Web会議","hp":14,"size":3,"speed":3,"arena":7,"freeze":[3.5,1.6],"shoot_interval":2.6,"shot_label":"通知","far_guard":10},"goal":[0,0,80]},{"name":"オフィス移転","floor":"#a39a8c","sky":"#3f86c4","hallucination":0.28,"reward":900,"ai":18,"par":65,"floors":[[[0,-0.5,40],[24,1,100]]],"conveyors":[[[0,0.05,14],[14,0.1,8],[0,0,-1],4.5],[[0,0.05,32],[16,0.1,6],[1,0,0],5],[[0,0.05,48],[14,0.1,8],[0,0,-1],5]],"blocks":[[[-7,0.75,22],[2,1.5,2],"#b5835a"],[[7,0.75,24],[2,1.5,2],"#b5835a"],[[-4,1,40],[2,2,2],"#b5835a"],[[5,1,56],[3,2,3],"#b5835a"]],"droppers":[[[3,0,38],3,2.0,0,"段ボール"],[[-3,0,46],3,2.0,1.0,"段ボール"],[[3,0,52],3,2.0,0.5,"段ボール"],[[-3,0,60],3,2.0,1.1,"段ボール"],[[3,0,63],3,2.2,0.4,"段ボール"]],"qblocks":[[[0,4,6],"point"],[[-3,4,30],"coffee"],[[5,5,56],"coffee"],[[3,4,26],"point"],[[-5,4,70],"point"],[[6,4,66],"point"],[[-6,4,50],"point"]],"lifeblocks":[[-4,5.5,40]],"kakin":[8,4,44],"checkpoints":[[0,0,66]],"enemies":[{"position":[0,0.5,20],"label":"段ボール","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,34],"label":"配線","axis":[0,0,1],"patrol":2,"speed":4.5},{"position":[6,0.5,44],"label":"備品リスト","speed":4.5,"chase":5},{"position":[-6,0.5,10],"label":"備品リスト","speed":4.0,"chase":4},{"position":[0,0.5,59],"label":"配線","axis":[1,0,0],"patrol":2.5,"speed":5.5}],"boss":{"position":[0,2,78],"label":"段ボールの山","hp":20,"size":4,"speed":3,"arena":7,"split":"段ボール","far_guard":10},"goal":[0,0,88]},{"name":"社員旅行","floor":"#c9b77c","sky":"#3b2f63","hallucination":0.3,"reward":1000,"ai":20,"par":70,"floors":[[[0,-0.5,37.5],[26,1,95]]],"blocks":[[[-6,0.4,10],[3,0.8,2],"#7a3b1e"],[[6,0.4,14],[3,0.8,2],"#7a3b1e"],[[-6,0.4,26],[3,0.8,2],"#7a3b1e"],[[6,0.4,30],[3,0.8,2],"#7a3b1e"],[[0,0.75,48],[10,1.5,4],"#8b5a2b"]],"qblocks":[[[0,4,6],"coffee"],[[-3,5.5,48],"point"],[[3,5.5,48],"coffee"],[[6,4,20],"point"],[[-4,4,58],"point"]],"lifeblocks":[[0,6.3,48]],"kakin":[[-10,4,36],[10,4,64]],"checkpoints":[[0,0,53]],"enemies":[{"position":[4,0.5,20],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[-4,0.5,38],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[3,0.5,60],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.5},{"position":[-6,0.5,6],"label":"よっぱらい\n上司","kind":"drunk","patrol":4,"speed":3.5},{"position":[7,0.5,40],"label":"よっぱらい\n上司","kind":"drunk","patrol":4.5,"speed":4.0},{"position":[-9,0.5,18],"label":"二次会の\n誘い","speed":4.5,"chase":5},{"position":[0,0.5,32],"label":"一発芸","axis":[1,0,0],"patrol":7,"speed":5.5},{"position":[9,0.5,46],"label":"幹事の\n仕事","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[-6,0.5,62],"label":"一発芸","axis":[1,0,0],"patrol":5,"speed":5.5},{"position":[8,0.5,24],"label":"二次会の\n誘い","speed":4.5,"chase":4},{"position":[0,0.5,55],"label":"よっぱらい\n上司","kind":"drunk","patrol":5,"speed":4.5},{"position":[-6,0.5,66],"label":"よっぱらい\n上司","kind":"drunk","patrol":3.5,"speed":4},{"position":[6,0.5,52],"label":"二次会の\n誘い","speed":4.5,"chase":5}],"boss":{"position":[0,2,73],"label":"幹事","hp":20,"size":4,"speed":3.5,"arena":8,"shoot_interval":1.3,"shot_label":"出し物\nリクエスト","far_guard":10},"goal":[0,0,82],"droppers":[[[-3,0,42],3,2.0,0,"お土産"],[[3,0,44],3,2.0,1.0,"お土産"],[[0,0,66],4,2.2,0.5,"お土産"]]},{"name":"終電ダッシュ","floor":"#5d6470","sky":"#141a3a","hallucination":0.3,"reward":1100,"ai":16,"par":50,"time_limit":30,"floors":[[[0,-0.5,10],[20,1,40]],[[0,-0.5,55],[20,1,30]],[[0,-0.5,87.5],[20,1,25]]],"blocks":[[[-5,1,8],[3,2,3],"#4e3b2a"],[[5,1,16],[3,2,3],"#4e3b2a"],[[-4,1,24],[3,2,2],"#4e3b2a"],[[6,0.4,84],[3,0.8,1],"#3a5a8a"],[[0,2,101.5],[20,4,3],"#2e8b57"]],"movers":[[[0,-0.25,35],[3,0.5,3],[0,0,1],3,1.0,0]],"conveyors":[[[0,0.05,50],[12,0.1,8],[0,0,-1],5],[[0,0.05,62],[12,0.1,6],[0,0,-1],6]],"qblocks":[[[0,4,4],"coffee"],[[0,4,45],"point"],[[-4,4,78],"coffee"],[[5,4,8],"point"],[[-4,4,68],"point"]],"lifeblocks":[[5,5,16]],"kakin":[-8,4,28],"checkpoints":[[0,0,42],[0,0,77]],"enemies":[{"position":[0,0.5,12],"label":"急ぎの\n電話","speed":4.5,"chase":4},{"position":[6,0.5,24],"label":"明日までの\n資料","axis":[1,0,0],"patrol":2,"speed":4.5},{"position":[-8,0.5,56],"label":"残業命令","axis":[0,0,1],"patrol":4,"speed":6.5},{"position":[7,0.5,46],"label":"エレベーター\n待ち","axis":[1,0,0],"patrol":1,"speed":2.0},{"position":[8,0.5,62],"label":"残業命令","axis":[0,0,1],"patrol":3,"speed":6.5},{"position":[0,0.5,84],"label":"急ぎの\n電話","speed":5.0,"chase":5},{"position":[-5,0.5,30],"label":"急ぎの\n電話","speed":5,"chase":4},{"position":[5,0.5,90],"label":"残業命令","axis":[1,0,0],"patrol":4,"speed":6}],"boss":null,"goal":[0,0,97],"droppers":[[[-3,0,80],3,2.0,0,"明日までの\n資料"],[[3,0,88],3,2.0,1.0,"明日までの\n資料"],[[0,0,58],3,1.8,0.6,"明日までの\n資料"],[[-3,0,92],3,1.8,0.3,"明日までの\n資料"]],"blinkers":[[[0,-0.25,72.5],[3,0.5,3],1.0,1.0,0.0]]},{"name":"人事評価","floor":"#6b4f3a","sky":"#1d2a44","hallucination":0.34,"reward":1500,"ai":26,"par":95,"floors":[[[0,-0.5,7.5],[18,1,35]],[[0,-0.5,49],[18,1,24]],[[0,5.5,82],[18,1,36]]],"blocks":[[[-5,1,6],[3,2,3],"#4e3b2a"],[[5,1,14],[3,2,3],"#4e3b2a"],[[-6,7,70],[2,2,2],"#4e3b2a"]],"blinkers":[[[0,-0.25,27],[3,0.5,3],1.6,1.4,1.2],[[0,-0.25,31],[3,0.5,3],1.6,1.4,0.6],[[0,-0.25,35],[3,0.5,3],1.6,1.4,0.0]],"conveyors":[[[0,0.05,48],[12,0.1,10],[0,0,-1],5]],"movers":[[[0,2.75,62.5],[3,0.5,3],[0,1,0],3,0.6,-1.5708]],"droppers":[[[-5,6,77],3,2.2,0,"差し戻し"],[[5,6,77],3,2.2,1.1,"差し戻し"],[[0,6,72],3,2.4,0.6,"差し戻し"]],"qblocks":[[[0,4,4],"coffee"],[[0,4,52],"point"],[[-4,10,82],"coffee"],[[-4,4,20],"point"],[[4,10,68],"point"]],"lifeblocks":[[5,5,14]],"kakin":[6,10,70],"checkpoints":[[0,0,40],[0,6,66]],"enemies":[{"position":[0,0.5,9],"label":"自己評価\nシート","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[-6,0.5,19],"label":"目標設定","speed":4.0,"chase":4},{"position":[6,0.5,43],"label":"役員","kind":"drunk","patrol":2.5,"speed":2},{"position":[-6,0.5,54],"label":"評価シート","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[0,6.5,71],"label":"360度\nフィードバック","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[5,0.5,56],"label":"役員","kind":"drunk","patrol":2.5,"speed":2.5}],"boss":{"position":[0,8,90],"label":"評価面談","hp":22,"size":4,"speed":3.5,"arena":6,"shoot_interval":1.3,"radial":2.2,"shot_label":"評価\nコメント","far_guard":9,"enrage":1.4},"goal":[0,6,98]}]};
 const hex3 = a => '#' + a.map(v => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0')).join('');
 const conv2 = d => d && Object.assign({}, d, { p: d.position, l: d.label, shoot: d.shoot_interval || 0 });
 const STAGES2 = YEAR2.stages.map(st => Object.assign({}, st, { hallu: st.hallucination, blocks: st.blocks || [], qblocks: st.qblocks || [],
   lifeblocks: st.lifeblocks || [], enemies: (st.enemies || []).map(conv2), boss: conv2(st.boss) }));
 for (const [k, [bg, fg]] of Object.entries(YEAR2.labels)) LABEL_COLORS[k] = [hex3(bg), hex3(fg)];
 function isTester() { return !!(G.acct && TESTERS.includes(String(G.acct.name).toLowerCase())); }
-function curStages() { return G.playMode === 'year2' ? STAGES2 : STAGES; }
-function stageNo(i = G.stage) { return i + 1 + (G.playMode === 'year2' ? STAGES.length : 0); }   // 2年目は 6〜10
+// 「1年目・2年目」はステージの年、「通常・残業・今日のお題」はモード。中では2つを合わせた名前(playMode)を使う
+//   normal / overtime / daily(1年目)、year2 / year2ot(2年目の通常・残業)
+const TEST_ONLY_MODES = ['year2', 'year2ot'];
+function isY2(m = G.playMode) { return m === 'year2' || m === 'year2ot'; }
+function isOT(m = G.playMode) { return m === 'overtime' || m === 'year2ot'; }
+function otParams(m = G.playMode) { return m === 'year2ot' ? OVERTIME2 : OVERTIME; }
+function playOf(year, m) { return year === 2 ? (m === 'overtime' ? 'year2ot' : 'year2') : m; }
+function yearOpen(y) { return y === 1 || isTester(); }     // 2年目はテスト用アカウントだけ(公開するときは条件を変える)
+function selPlay() { return playOf(yearOpen(G.selYear) ? G.selYear : 1, G.selMode); }
+function curStages() { return isY2() ? STAGES2 : STAGES; }
+function stageNo(i = G.stage) { return i + 1 + (isY2() ? STAGES.length : 0); }   // 2年目は 6〜10
 const CHARS = [
   { name: '新人', role: 'やる気だけはある新社会人', desc: 'バランス型。AIを信じてなんでも投げる!', speed: 1.0, jump: 0.97, jstar: 2, shots: 2, hallu: 1.0, score: 1.5,
     look: { suit: '#2b2f3a', tie: '#c0392b', hair: '#1a1a1a', style: 'short', bag: true } },
@@ -911,7 +927,7 @@ const G = {
   coffeeUntil: 0, rateUntil: 0, throwLog: [], goal: null, now: 0,
   movers: [], droppers: [], checkpoints: [], bossShots: [], special: 0, sp: null, respawnPt: null, ground: null,
   acct: null, save: null, doru: 0, startStage: 0, playMode: 'normal', selMode: 'normal', daily: null, cards: [],
-  blinkers: [], conveyors: [], timeLeft: 0, startStage2: 0,
+  blinkers: [], conveyors: [], timeLeft: 0, startStage2: 0, selYear: 1,
 };
 const keys = {};
 G.save = fixSave(null);
@@ -1022,11 +1038,11 @@ function buildStage(i) {
   G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
   G.stageAmmo0 = G.ammo; G.stageSpecial0 = G.special; G.stageLives0 = G.lives;   // やり直したときに戻す持ち物
   respawn(true);
-  if (G.playMode !== 'year2' && i === STAGES.length - 1) preloadEndingVoices();
-  if (G.playMode === 'year2') G.cards = []; else spawnCards(i);   // 2年目編には社員証はない
+  if (!isY2() && i === STAGES.length - 1) preloadEndingVoices();
+  if (isY2()) G.cards = []; else spawnCards(i);   // 2年目編には社員証はない
   startLog(); startStageStats();
   if (bonusAi > 0) { const id = G.runId; setTimeout(() => { if (G.mode === 'play' && G.runId === id) toast(`ガシャのAI +${bonusAi}!`); }, 1900); }
-  showBanner(G.playMode === 'year2' ? `2年目 STAGE ${stageNo(i)}\n${st.name}` : G.playMode === 'overtime' ? `残業 STAGE ${i + 1}\n${st.name}` : G.playMode === 'daily' ? `今日のお題\n${G.daily.rule.name}` : `STAGE ${i + 1}\n${st.name}`, 1.8);
+  showBanner(G.playMode === 'year2ot' ? `2年目 残業 STAGE ${stageNo(i)}\n${st.name}` : G.playMode === 'year2' ? `2年目 STAGE ${stageNo(i)}\n${st.name}` : G.playMode === 'overtime' ? `残業 STAGE ${i + 1}\n${st.name}` : G.playMode === 'daily' ? `今日のお題\n${G.daily.rule.name}` : `STAGE ${i + 1}\n${st.name}`, 1.8);
   updateHud();
 }
 function spawnEnemy(d, boss) {
@@ -1055,8 +1071,8 @@ function spawnEnemy(d, boss) {
 }
 
 // ---------------- プレイヤー ----------------
-function startRun(ch, mode = G.selMode || 'normal') {
-  if ((mode === 'overtime' && !overtimeOpen()) || (mode === 'year2' && !isTester())) mode = 'normal';
+function startRun(ch, mode = selPlay()) {
+  if ((mode === 'overtime' && !overtimeOpen()) || (TEST_ONLY_MODES.includes(mode) && !isTester())) mode = 'normal';
   G.playMode = mode; G.daily = mode === 'daily' ? dailyOf() : null;
   if (G.daily) ch = CHARS[G.daily.char];
   G.char = ch; G.score = 0; G.lives = (G.daily && G.daily.rule.lives) || 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
@@ -1078,7 +1094,8 @@ function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
   G.player.copy(r); G.vy = 0; G.yaw = 0; G.camYaw = G.view === 'front' ? Math.PI : 0; G.grounded = false;
   G.inv = full ? 0 : 2; G.safe = 0; G.run = 0;
-  G.timeLeft = (curStages()[G.stage] || {}).time_limit || 0;   // 終電ダッシュ:ミスしたら時間は元にもどる
+  const lim = (curStages()[G.stage] || {}).time_limit || 0;
+  G.timeLeft = lim && G.playMode === 'year2ot' ? lim + OVERTIME2.timeAdd : lim;   // 2年目の残業は少し長め   // 終電ダッシュ:ミスしたら時間は元にもどる
   // 残業モードで追いかけてきたボスは、ミスしたら持ち場にもどる(復活地点で待ちぶせしないように)
   for (const e of G.enemies || []) if (e.boss && e.engaged && !e.dead) { e.engaged = false; e.calm = true; e.detour = null; e.mesh.position.copy(e.start); }
 }
@@ -1272,13 +1289,13 @@ function updateEnemies(dt) {
     if (e.dead) continue;
     const m = e.mesh;
     if (e.freezeMark) { const f = frozen(e); e.freezeMark.visible = f; if (f) e.freezeMark.position.set(m.position.x, m.position.y + e.size / 2 + 1.6, m.position.z); }
-    if (e.boss && G.playMode === 'overtime') {
+    if (e.boss && isOT()) {
       // 残業モード:一度見つかったら、ボスは自分の足場の上ならどこまでも追いかけてくる
       const fl = bossFloor(e), half = e.size / 2;
       if (!e.engaged && Math.hypot(p.x - e.start.x, p.z - e.start.z) < e.arena + (e.calm ? 0 : 6)) e.engaged = true;   // ミスのあとは近くまで来ないと追わない
       var near = e.engaged;
       const tx = near ? p.x : e.start.x, tz = near ? p.z : e.start.z, dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
-      if (d > 0.1) {
+      if (d > 0.1 && !frozen(e)) {
         const clampX = x => fl ? Math.max(fl.minX + half, Math.min(fl.maxX - half, x)) : x;
         const clampZ = z => fl ? Math.max(fl.minZ + half, Math.min(fl.maxZ - half, z)) : z;
         const nx = clampX(m.position.x + dx / d * e.speed * dt), nz = clampZ(m.position.z + dz / d * e.speed * dt);
@@ -1307,8 +1324,9 @@ function updateEnemies(dt) {
         }
       }
       if (e.bar) { e.bar.position.set(m.position.x, m.position.y + e.size / 2 + 0.8, m.position.z); e.bar.quaternion.copy(camera.quaternion); }
-      if (e.shoot && near && Math.hypot(p.x - m.position.x, p.z - m.position.z) < 22) { e.shootT -= dt; if (e.shootT <= 0) { e.shootT = e.shoot; bossShoot(e); } }
-      const guarding = G.now < e.guardUntil;
+      if (e.shoot && near && !frozen(e) && Math.hypot(p.x - m.position.x, p.z - m.position.z) < 22) { e.shootT -= dt; if (e.shootT <= 0) { e.shootT = e.shoot; bossShoot(e); } }
+      if (near && Math.hypot(p.x - m.position.x, p.z - m.position.z) < 22) bossRadial(e, dt);
+      const guarding = isGuarding(e);
       if (guarding && !e.guardMesh) { e.guardMesh = box(e.size + 0.5, e.size + 0.5, e.size + 0.5, new THREE.MeshBasicMaterial({ color: 0x56B4E9, transparent: true, opacity: 0.35 })); scene.add(e.guardMesh); }
       if (e.guardMesh) { e.guardMesh.position.copy(m.position); e.guardMesh.visible = guarding; }
     } else if (e.boss || e.chase) {
@@ -1862,7 +1880,8 @@ window.addEventListener('keydown', e => {
     if (k === 'l') openRanking();
     if (k === 'g') openLocker();
     if (k === 'i') openNews();
-    if (k === 'm') { const ms = ['normal', 'overtime', 'daily', 'year2'].filter(m => (m !== 'overtime' || overtimeOpen()) && (m !== 'year2' || isTester())); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
+    if (k === 'm') { const ms = modesForYear(G.selYear); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
+    if (k === 'y' && yearOpen(2)) setSelYear(G.selYear === 2 ? 1 : 2);
     if (k === 'h') openIntro(() => openCharsel());
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
@@ -2042,7 +2061,7 @@ function setMode(m) {
 }
 function updateHud() {
   $('hStage').textContent = `STAGE ${stageNo()} ${curStages()[G.stage].name}`;
-  $('hLine').textContent = `${G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ LIFE ${G.lives} ・ SCORE ${G.score} ・ ${G.doru}どる`;
+  $('hLine').textContent = `${G.playMode === 'year2ot' ? '【2年目・残業】' : G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ LIFE ${G.lives} ・ SCORE ${G.score} ・ ${G.doru}どる`;
   $('hAmmoN').textContent = G.ammo;
   $('hAmmo').className = 'ammo' + (G.ammo <= 0 ? ' empty' : G.ammo <= 3 ? ' low' : '');
   $('bSP').classList.toggle('hidden', G.special <= 0);
@@ -2054,7 +2073,7 @@ function status() {
   if (G.now < G.rateUntil) s.push(`レート制限 ${Math.ceil(G.rateUntil - G.now)}秒`);
   if (G.special > 0) s.push(`課金パワー ×${G.special}${G.device === 'pc' ? '(Eで発動)' : ''}`);
   if (G.timeLeft > 0) s.push(`終電まで ${Math.ceil(G.timeLeft)}秒`);
-  if (G.st && G.playMode !== 'year2') s.push(`社員証 ${G.st.cards}/3`);
+  if (G.st && !isY2()) s.push(`社員証 ${G.st.cards}/3`);
   if (G.combo >= 2) s.push(`${G.combo}コンボ!`);
   const t = s.join(' ・ '); if (t !== statusText) { statusText = t; $('status').textContent = t; }
 }
@@ -2114,26 +2133,30 @@ function openCharsel() {
 }
 function refreshCharsel() {
   const sv = G.save, who = G.acct ? G.acct.name : 'ゲスト';
-  if ((G.selMode === 'overtime' && !overtimeOpen()) || (G.selMode === 'year2' && !isTester())) G.selMode = 'normal';
-  const y2 = G.selMode === 'year2';
-  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span>ハイスコア ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${isTester() && sv.best2 ? ` / 2年目 ${sv.best2}` : ''}</span><span>所持 ${sv.dol}どる</span>` +
+  if (!yearOpen(G.selYear)) G.selYear = 1;
+  if (!modesForYear(G.selYear).includes(G.selMode)) G.selMode = 'normal';
+  const play = selPlay(), y2 = play === 'year2';
+  $('csYearRow').classList.toggle('hidden', !yearOpen(2));
+  document.querySelectorAll('#csYear [data-y]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.y) === G.selYear)));
+  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span>ハイスコア ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${isTester() && sv.best2 ? ` / 2年目 ${sv.best2}` : ''}${isTester() && sv.best2ot ? ` / 2年目残業 ${sv.best2ot}` : ''}</span><span>所持 ${sv.dol}どる</span>` +
     `<span>AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span>課金パワー ${sv.special}</span>`;
-  document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); if (b.dataset.m === 'year2') b.classList.toggle('hidden', !isTester()); });
+  document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); b.classList.toggle('hidden', b.dataset.m === 'daily' && G.selYear === 2); });
   const note = $('csModeNote');
-  $('csStage').classList.toggle('hidden', G.selMode !== 'normal' && !y2); note.classList.toggle('hidden', G.selMode === 'normal');
+  $('csStage').classList.toggle('hidden', play !== 'normal' && !y2); note.classList.toggle('hidden', play === 'normal');
+  if (play === 'year2ot') note.textContent = `2年目の残業(テスト中):ステージ6から。敵が速くて硬い・ボスが追ってくる・AIは少なめ・終電は +${OVERTIME2.timeAdd}秒。スコアとどるが ×${OVERTIME2.score}`;
   if (y2) note.textContent = '2年目編(テスト中・テスト用アカウントだけ):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間';
-  if (G.selMode === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・ボスがどこまでも追ってくる・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
-  if (G.selMode === 'daily') note.textContent = `今日のお題:${dailyText()}(キャラは固定)`;
+  if (play === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・ボスがどこまでも追ってくる・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
+  if (play === 'daily') note.textContent = `今日のお題:${dailyText()}(キャラは固定)`;
   G.startStage = Math.max(0, Math.min(G.startStage, sv.unlocked - 1));
   G.startStage2 = Math.max(0, Math.min(G.startStage2 || 0, (sv.unlocked2 || 1) - 1));
   const [cur, max] = selStage();
   $('stName').textContent = y2 ? `スタート:ステージ${cur + 1 + STAGES.length} ${STAGES2[cur].name}` : `スタート:ステージ${cur + 1} ${STAGES[cur].name}`;
   $('stPrev').disabled = cur <= 0; $('stNext').disabled = cur >= max;
 }
-function selStage() { return G.selMode === 'year2' ? [G.startStage2 || 0, (G.save.unlocked2 || 1) - 1] : [G.startStage, G.save.unlocked - 1]; }   // [今のスタート, 選べる最後]
+function selStage() { return selPlay() === 'year2' ? [G.startStage2 || 0, (G.save.unlocked2 || 1) - 1] : [G.startStage, G.save.unlocked - 1]; }   // [今のスタート, 選べる最後]
 function moveStage(d) {
   const [cur, max] = selStage(), to = Math.max(0, Math.min(max, cur + d));
-  if (G.selMode === 'year2') G.startStage2 = to; else G.startStage = to;
+  if (selPlay() === 'year2') G.startStage2 = to; else G.startStage = to;
   refreshCharsel(); sfx.locked && tone(900, 900, 0.04, 'sine', 0.08);
 }
 $('stPrev').onclick = e => { moveStage(-1); e.currentTarget.blur(); };   // Enter でもう一度押されないように
@@ -2222,10 +2245,10 @@ function showResult(kind) {
     $('rTitle').textContent = 'GO HOME ON TIME!';
     $('rBody').textContent = `${curStages()[G.stage].name} クリア! 今のスコアは ${G.score}点。次は「${curStages()[G.stage + 1].name}」だよ。`;
     $('rNext').textContent = '次のステージへ'; resultNext = () => { buildStage(G.stage + 1); setMode('play'); };
-  } else if (kind === 'all' && G.playMode === 'year2') {
-    $('rTitle').textContent = '2年目、おつかれさまでした!';
+  } else if (kind === 'all' && isY2()) {
+    $('rTitle').textContent = G.playMode === 'year2ot' ? '2年目の残業、完遂!' : '2年目、おつかれさまでした!';
     $('rBody').textContent = `2年目編 クリア! スコアは ${G.score}点(${G.char.name})。\n人事評価は「たいへんよくできました」\n来年は、きみにも後輩ができる……?`;
-    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, 'year2');
+    $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, G.playMode);
   } else if (kind === 'all') {
     saveBest();
     $('rTitle').textContent = G.playMode === 'overtime' ? '残業、完遂!' : '定時退社、達成!';
@@ -2377,7 +2400,7 @@ async function sendScore(acct) {
     if (res.ok) {
       Object.keys(rkCache).forEach(k => delete rkCache[k]);
       if (!here()) return;
-      $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>オンライン ${res.rank}位${res.rank <= 3 ? '! 表彰台入り!' : res.rank <= 10 ? '! トップ10入り!' : ''}</p>
+      $('rRank').innerHTML = `<b>オンラインランキング</b><p class="msg good">${acct.name} で登録しました!<br>${res.seasonRank ? `今期 ${res.seasonRank}位${res.seasonRank === 1 ? '! このままなら王者!' : res.seasonRank <= 3 ? '! 表彰台入り!' : res.seasonRank <= 10 ? '! トップ10入り!' : ''}(歴代 ${res.rank}位)` : `オンライン ${res.rank}位${res.rank <= 3 ? '! 表彰台入り!' : res.rank <= 10 ? '! トップ10入り!' : ''}`}</p>
         <button class="linky" id="rkView">ランキングを見る</button>`;
       $('rkView').onclick = () => openRanking();
     } else if (res.error === 'not owner') {
@@ -2409,7 +2432,8 @@ function startWith(acct, save, msg, created = false) {
   // サーバーのハイスコアの方が高ければ、タイトルの自己ベストもそれに合わせる(ほかの端末で出した記録)
   if (acct && G.save.best > ((bestOf(acct) || {}).score || 0)) setBest(acct, { score: G.save.best, char: '' });
   G.doru = G.save.dol; G.ammo = G.save.ammo; G.special = G.save.special; G.score = 0; G.playMode = 'normal';
-  G.selMode = store.get('selMode', 'normal');
+  G.selMode = store.get('selMode', 'normal'); G.selYear = Number(store.get('selYear', 1)) === 2 ? 2 : 1;
+  if (G.selMode === 'year2') { G.selMode = 'normal'; G.selYear = 2; }
   G.startStage2 = Math.max(0, (G.save.unlocked2 || 1) - 1);
   picked = Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0));   // 最初はいつものキャラを選んでおく
   // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
@@ -2424,6 +2448,11 @@ function startWith(acct, save, msg, created = false) {
   G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;   // ログインした人は続きから、ゲストは1面から
   openCharsel(); if (msg) toast(msg);
 }
+function champMsg(res) {   // サーバーから「第〇回王者」が届いたとき
+  const t = (res.newTitles || []).filter(champNo);
+  if (t.length) setTimeout(() => sfx.power(), 300);
+  return t.map(id => `\n👑 称号「${titleName(id)}」ゲット!`).join('');
+}
 async function doLogin() {
   const name = $('lgName').value.trim(), pass = $('lgPass').value;
   if (!NAME_RE.test(name)) return lgMsg('ニックネームは英数字と - _ で12文字まで', 'bad');
@@ -2433,7 +2462,7 @@ async function doLogin() {
     const res = await gasPost({ action: 'auth', name, pass });
     if (G.mode !== 'login') return;          // 返事を待つ間にゲストなどで始めていた
     if (!res.ok) return lgMsg(errText(res.error), 'bad');
-    startWith({ name: res.name, token: res.token }, res.save, res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`, !!res.created);
+    startWith({ name: res.name, token: res.token }, res.save, (res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`) + champMsg(res), !!res.created);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgGo').disabled = false; }
 }
@@ -2443,7 +2472,7 @@ async function continueLogin() {
   try {
     const res = await gasPost({ action: 'load', name: acct.name, token: acct.token });
     if (G.mode !== 'login') return;
-    if (res.ok) startWith(acct, res.save, `おかえりなさい、${acct.name}!`);
+    if (res.ok) startWith(acct, res.save, `おかえりなさい、${acct.name}!` + champMsg(res));
     else { store.set('acct', null); G.acct = null; G.session = false; openLogin(true); lgMsg('もう一度パスワードを入れてね', 'bad'); }
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgContinue').disabled = false; }
@@ -2468,7 +2497,8 @@ function persist(from = 'play', keepalive = false) {
   else {
     sv.dol = G.doru;
     if (G.playMode === 'overtime') sv.bestOt = Math.max(sv.bestOt || 0, G.score);
-    else if (G.playMode === 'year2') sv.best2 = Math.max(sv.best2 || 0, G.score);   // 2年目も AI と課金パワーは持ち帰らない
+    else if (G.playMode === 'year2') sv.best2 = Math.max(sv.best2 || 0, G.score);
+    else if (G.playMode === 'year2ot') sv.best2ot = Math.max(sv.best2ot || 0, G.score);   // 2年目も AI と課金パワーは持ち帰らない
     else if (G.playMode !== 'daily') { sv.ammo = G.ammo; sv.special = G.special; sv.best = Math.max(sv.best || 0, G.score); if (G.char) saveBest(); }
   }
   if (!G.acct) return;
@@ -2625,8 +2655,8 @@ function introPages() {
       '<li><b>社員証</b>:各ステージに3枚かくれている(1枚500点)</li><li>クリアすると<b>ボーナス</b>:定時(速いほど・最大2000)/ノーミス 1000/AI節約(投げないほど・最大1000)/全員たおした 500</li>' +
       '<li>キャラのスコア倍率(新人×1.5など)は全部にかかる</li></ul><p>速さ・全部回る・AIを使わない、ぜんぶ同時には取れない。どれをねらう?</p>'],
     ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬く、ボスは足場の上をどこまでも追いかけてくる。そのかわりスコアとどるが×1.5。ランキングも別</li>' +
-      (isTester() ? '<li><b>2年目編</b>(テスト中):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。ランキングも別</li>' : '') +
-      '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li>' +
+      (isTester() ? '<li><b>2年目編</b>(テスト中):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。キャラ選択の「年」で選ぶ。2年目にも残業モードがある。ランキングも別</li>' : '') +
+      '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li><li><b>今期ランキング</b>:半月ごとにリセット。1位には赤い称号「第〇回王者」</li>' +
       '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。キャラ選択の「ガシャ・称号」でつけかえ</li></ul>'],
     ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
   ];
@@ -2658,27 +2688,44 @@ $('csHelp').onclick = () => openIntro(() => openCharsel());
 $('csRank').onclick = () => openRanking();
 
 // ランキング画面
-let rankFrom = 'title', rkTab = 'normal', rkStage = 1, rkSeq = 0, rkDay = null;
+let rankFrom = 'title', rkTab = 'season', rkStage = 1, rkSeq = 0, rkDay = null;
 const rkCache = {};
 function openRanking() {
   const from = G.mode;
   if (from !== 'ranking') rankFrom = from;
   let tab = rkTab;
-  if (from === 'result' && (G.playMode === 'overtime' || G.playMode === 'daily' || G.playMode === 'year2')) tab = G.playMode;
-  else if (from === 'result') tab = 'normal';
+  if (from === 'result' && ['overtime', 'daily', 'year2', 'year2ot'].includes(G.playMode)) tab = G.playMode;
+  else if (from === 'result') tab = 'season';
   if (from !== 'ranking') rkDay = from === 'result' && G.playMode === 'daily' && G.daily ? G.daily.day : null;   // 結果画面からは、遊んだ日のお題
   setMode('ranking'); setRankTab(tab);
 }
-function rankTabs() { return ['normal', 'overtime', 'daily', 'year2', 'time'].filter(t => t !== 'year2' || isTester()); }   // 2年目はテスト用アカウントだけ
+// 今期ランキング:半月ごと(1〜15日 / 16日〜月末、日本時間)。第1回は 2026/10/16〜10/31(サーバーと同じ計算)
+const SEASON_BASE = 2026 * 24 + 9 * 2 + 1;
+function seasonNow() { const d = new Date(Date.now() + 9 * 3600e3); return d.getUTCFullYear() * 24 + d.getUTCMonth() * 2 + (d.getUTCDate() >= 16 ? 1 : 0) - SEASON_BASE + 1; }
+function seasonRange(no) {
+  const i = SEASON_BASE + no - 1, y = Math.floor(i / 24), m = Math.floor((i % 24) / 2) + 1, half = i % 2, last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return { start: `${m}/${half ? 16 : 1}`, end: `${m}/${half ? last : 15}`, endDate: new Date(Date.UTC(y, m - 1, half ? last : 15) + 15 * 3600e3) };
+}
+function seasonNote(sv) {
+  const no = sv ? sv.no : seasonNow(), r = seasonRange(no), left = Math.max(0, Math.ceil((r.endDate - Date.now()) / 864e5));
+  if (no <= 0) return `プレシーズン(〜${r.end})。10/16 から第1回スタート!`;
+  return `第${no}回 今期ランキング(${r.start}〜${r.end}・あと${left}日)。通常モードの点で競う。半月ごとにリセット`;
+}
+function seasonPrize(sv) {   // 称号がもらえる説明(赤い枠)
+  const no = Math.max(1, sv ? sv.no : seasonNow());
+  return `<span class="prize">👑 期が終わったときに1位だった人には、赤い特別な称号<span class="ttl champ">第${no}回王者</span>をプレゼント!` +
+    `ランキングで名前の横に表示されるよ(次にログインしたときに届きます)</span>`;
+}
+function rankTabs() { return ['season', 'normal', 'overtime', 'daily', 'year2', 'year2ot', 'time'].filter(t => !TEST_ONLY_MODES.includes(t) || isTester()); }   // 2年目はテスト用アカウントだけ
 function setRankTab(t, stage) {
-  if (!rankTabs().includes(t)) t = 'normal';
-  document.querySelectorAll('#rkTabs [data-t="year2"]').forEach(b => b.classList.toggle('hidden', !isTester()));
+  if (!rankTabs().includes(t)) t = 'season';
+  document.querySelectorAll('#rkTabs [data-t]').forEach(b => { if (TEST_ONLY_MODES.includes(b.dataset.t)) b.classList.toggle('hidden', !isTester()); });
   rkTab = t; if (stage) rkStage = stage;
   document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
   document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
   $('rkStages').classList.toggle('hidden', t !== 'time');
-  $('rkNote').textContent = { normal: 'PC版(exe)とWeb版、みんなの自己ベスト', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
-    daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), year2: '2年目編(ステージ6〜10・テスト中)の自己ベスト(テスト用アカウントにだけ見える)', time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t];
+  $('rkNote').innerHTML = escapeHtml({ season: seasonNote(), normal: 'PC版(exe)とWeb版、みんなの自己ベスト(歴代)', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
+    daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), year2: '2年目編(ステージ6〜10・テスト中)の自己ベスト(テスト用アカウントにだけ見える)', year2ot: '2年目の残業モード(テスト中)の自己ベスト', time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t]) + (t === 'season' ? seasonPrize() : '');
   loadRank();
 }
 async function loadRank() {
@@ -2695,6 +2742,10 @@ async function loadRank() {
     const row = (e, n) => `<li class="${isMe(e.name) ? 'me ' : ''}${n <= 3 ? 'top' + n : ''}"><span class="num">${n}.</span>` + (time
       ? `<span>${escapeHtml(e.name)}<span class="sub">${escapeHtml(e.character || '')}</span></span><b>${Number(e.sec).toFixed(1)}秒</b></li>`
       : `<span>${escapeHtml(e.name)}${titleChip(e.title)}${e.clear ? ' ★' : ''}</span><b>${e.score}点</b></li>`);
+    if (rkTab === 'season' && res.season) {
+      const sv = res.season, prev = sv.prev ? `<span class="prev">前回(第${sv.no - 1}回)の王者:<b>${escapeHtml(sv.prev.name)}</b>(${sv.prev.score}点)</span>` : '';
+      $('rkNote').innerHTML = escapeHtml(seasonNote(sv)) + prev + seasonPrize(sv);
+    }
     let html = rows.length ? rows.map((e, i) => row(e, i + 1)).join('') : empty;
     // 10位より下でも、自分の順位を一番下に出す
     if (mine && mine.rank && !rows.some(e => isMe(e.name))) html += (mine.rank > rows.length ? '<li class="sep"><span></span><span>⋮</span><span></span></li>' : '') + row(mine, mine.rank);
@@ -2704,7 +2755,7 @@ async function loadRank() {
   if (hit && Date.now() - hit.t < 30000) return draw(hit.res);
   list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
   try {
-    const res = await gasTop(RANK_SHOW, key, me, key === 'year2' && G.acct ? G.acct.token : '');
+    const res = await gasTop(RANK_SHOW, key, me, TEST_ONLY_MODES.includes(key) && G.acct ? G.acct.token : '');
     rkCache[cacheKey] = { t: Date.now(), res }; draw(res);
   } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
@@ -2721,6 +2772,8 @@ const PAR = [30, 50, 60, 70, 80];               // 定時ボーナスの目安�
 const BONUS = { time: 2000, nomiss: 1000, aiSave: 1000, aiStep: 100, allKill: 500, card: 500, daily: 300 };
 const COMBO_MUL = [1, 2, 4, 5];                 // 着地せずに続けて踏むと 200 → 400 → 800 → 1000点
 const OVERTIME = { speed: 1.35, bossHp: 1.5, hallu: 0.1, ai: 0.8, score: 1.5, dol: 1.5 };
+// 2年目の残業(2年目はもともと難しいので、1年目の残業より少しゆるめ。終電の制限時間は +12秒)
+const OVERTIME2 = { speed: 1.2, bossHp: 1.2, hallu: 0.06, ai: 0.9, score: 1.5, dol: 1.5, timeAdd: 12 };
 // 社員証:各ステージ3枚(ちょっと見つけにくい所)
 const CARDS = [
   [[0, 6.2, 24], [-13, 0.9, -8], [13, 0.9, 38]],
@@ -2744,9 +2797,14 @@ const TITLES = [
   { id: 'zangyo', name: '残業マスター', desc: '残業モードで全クリ' },
   { id: 'daily', name: 'お題クリア', desc: '今日のお題をクリア' },
   { id: 'kisekae', name: 'おしゃれ番長', desc: '着せ替えをぜんぶ集める' },
-  { id: 'nenme2', name: '2年目突破', desc: '2年目編(ステージ6〜10)をクリア', test: true },   // テスト中(テスト用アカウントにだけ見える)
+  { id: 'nenme2', name: '2年目突破', desc: '2年目編(ステージ6〜10)をクリア', test: true },
+  { id: 'zangyo2', name: '残業の鬼', desc: '2年目の残業モードで全クリ', test: true },   // テスト中(テスト用アカウントにだけ見える)
 ];
-function visibleTitles() { return TITLES.filter(t => !t.test || isTester()); }
+function visibleTitles() {
+  const champs = (G.save.titles || []).filter(champNo).sort((a, b) => champNo(a) - champNo(b))
+    .map(id => ({ id, name: titleName(id), desc: `第${champNo(id)}回の今期ランキングで1位`, champ: true }));
+  return champs.concat(TITLES.filter(t => !t.test || isTester()));
+}
 const ITEMS = [
   { id: 'tie_red', slot: 'tie', name: '赤ネクタイ', color: '#d7263d' },
   { id: 'tie_gold', slot: 'tie', name: '金ネクタイ', color: '#e0b000' },
@@ -2767,12 +2825,12 @@ const DAILY_RULES = [
   { id: 'rush', name: '定時ダッシュの日', desc: '定時ボーナスが2倍', timeMul: 2 },
 ];
 function defaultSave() {
-  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0, dailyDay: 0, bonusAi: 0, unlocked2: 1, best2: 0, cleared2: 0,
+  return { dol: 0, ammo: 0, special: 0, best: 0, unlocked: 1, character: 0, cleared: 0, clearChars: 0, bestOt: 0, dailyDay: 0, bonusAi: 0, unlocked2: 1, best2: 0, cleared2: 0, best2ot: 0,
            titles: [], items: [], cards: [], title: '', equip: {}, times: [0, 0, 0, 0, 0] };
 }
 function fixSave(sv) {
   const s = Object.assign(defaultSave(), sv || {});
-  for (const k of ['dol', 'ammo', 'special', 'best', 'character', 'cleared', 'clearChars', 'bestOt', 'dailyDay', 'bonusAi', 'best2', 'cleared2']) { const v = Math.floor(Number(s[k])); s[k] = isFinite(v) && v > 0 ? v : 0; }
+  for (const k of ['dol', 'ammo', 'special', 'best', 'character', 'cleared', 'clearChars', 'bestOt', 'dailyDay', 'bonusAi', 'best2', 'cleared2', 'best2ot']) { const v = Math.floor(Number(s[k])); s[k] = isFinite(v) && v > 0 ? v : 0; }
   s.unlocked = Math.max(1, Math.min(STAGES.length, Math.floor(Number(s.unlocked)) || 1));
   s.unlocked2 = Math.max(1, Math.min(STAGES2.length, Math.floor(Number(s.unlocked2)) || 1));
   s.character = Math.min(CHARS.length - 1, s.character);
@@ -2795,19 +2853,21 @@ function dailyText(d = dailyOf()) {
 function overtimeOpen() { return !!(G.save.cleared || G.save.unlocked >= STAGES.length); }
 function modeKey() { return G.playMode === 'daily' ? 'daily-' + G.daily.day : (G.playMode || 'normal'); }
 function rule() { return G.playMode === 'daily' && G.daily ? G.daily.rule : {}; }
-function modeMul() { return G.playMode === 'overtime' ? OVERTIME.score : 1; }
-function enemySpeedMul() { return G.playMode === 'overtime' ? OVERTIME.speed : (rule().speed || 1); }
-function bossHpMul() { return G.playMode === 'overtime' ? OVERTIME.bossHp : 1; }
-function halluAdd() { return G.playMode === 'overtime' ? OVERTIME.hallu : (rule().hallu || 0); }
+function modeMul() { return isOT() ? otParams().score : 1; }
+function enemySpeedMul() { return isOT() ? otParams().speed : (rule().speed || 1); }
+function bossHpMul() { return isOT() ? otParams().bossHp : 1; }
+function halluAdd() { return isOT() ? otParams().hallu : (rule().hallu || 0); }
 function stageAmmo(st, have) {
   if (G.playMode === 'daily') return rule().noAI ? 0 : (rule().ai || st.ai);
-  if (G.playMode === 'overtime') return Math.max(have, Math.floor(st.ai * OVERTIME.ai));
+  if (isOT()) return Math.max(have, Math.floor(st.ai * otParams().ai));
   return Math.max(have, st.ai);
 }
-const MODE_NAMES = { normal: '通常', overtime: '残業', daily: '今日のお題', year2: '2年目' };
+const MODE_NAMES = { normal: '通常', overtime: '残業', daily: '今日のお題' };
+function modesForYear(y) { return ['normal', 'overtime', 'daily'].filter(m => (m !== 'overtime' || overtimeOpen() || y === 2) && !(m === 'daily' && y === 2)); }   // お題は1年目だけ
+function setSelYear(y) { if (!yearOpen(y)) { sfx.locked(); return; } G.selYear = y; store.set('selYear', y); refreshCharsel(); }
 function setSelMode(m) {
-  if (m === 'overtime' && !overtimeOpen()) { sfx.locked(); toast('ステージ5まで進むと\n残業モードが開くよ', true); return; }
-  if (m === 'year2' && !isTester()) { sfx.locked(); return; }
+  if (m === 'overtime' && !overtimeOpen() && G.selYear !== 2) { sfx.locked(); toast('ステージ5まで進むと\n残業モードが開くよ', true); return; }
+  if (!['normal', 'overtime', 'daily'].includes(m) || !modesForYear(G.selYear).includes(m)) { sfx.locked(); return; }
   G.selMode = m; store.set('selMode', m); refreshCharsel();
 }
 
@@ -2827,7 +2887,7 @@ function stageBonus() {
   add('ノーミス', st.deaths === 0 ? BONUS.nomiss : 0);
   add(`AI節約(投げた回数 ${st.throws})`, Math.max(0, BONUS.aiSave - st.throws * BONUS.aiStep));
   add('全員たおした', foesLeft() === 0 ? BONUS.allKill : 0);
-  return { lines, sec, full: k >= 1, cards: st.cards, throws: st.throws, deaths: st.deaths, stage: G.stage, year2: G.playMode === 'year2' };
+  return { lines, sec, full: k >= 1, cards: st.cards, throws: st.throws, deaths: st.deaths, stage: G.stage, year2: isY2() };
 }
 function bonusHTML(b) {
   if (!b) return '';
@@ -2848,14 +2908,14 @@ function stageCleared() {
   G.lastBonus = b;
   if (G.playMode === 'daily') return finishDaily();
   const list = curStages(), st = list[G.stage];
-  const reward = Math.round((st.reward ?? REWARDS[G.stage] ?? 0) * (G.playMode === 'overtime' ? OVERTIME.dol : 1)); G.doru += reward;
+  const reward = Math.round((st.reward ?? REWARDS[G.stage] ?? 0) * (isOT() ? otParams().dol : 1)); G.doru += reward;
   if (G.playMode === 'normal') G.save.unlocked = Math.max(G.save.unlocked, Math.min(STAGES.length, G.stage + 2));
   if (G.playMode === 'year2') G.save.unlocked2 = Math.max(G.save.unlocked2 || 1, Math.min(STAGES2.length, G.stage + 2));
   if (G.stage + 1 < list.length) { persist(); openGacha(`${st.name} クリア! +${reward}どる`, 'run'); }
   else {
     allCleared(); persist();
     if (G.acct) { G.endBody = Object.assign(scoreBody(G.acct), { clear: true }); keepScore(G.endBody); }
-    if (G.playMode === 'year2') showResult('all');   // 2年目編のおわりは短いメッセージだけ
+    if (isY2()) showResult('all');   // 2年目編のおわりは短いメッセージだけ
     else playEnding();
   }
 }
@@ -2864,6 +2924,7 @@ function allCleared() {
   if (G.score >= 30000) award('ace');
   if (G.playMode === 'overtime') { award('zangyo'); return; }
   if (G.playMode === 'year2') { sv.cleared2 = 1; award('nenme2'); return; }
+  if (G.playMode === 'year2ot') { award('zangyo2'); return; }
   sv.cleared = 1;
   sv.clearChars = (sv.clearChars || 0) | (1 << Math.max(0, CHARS.indexOf(G.char)));
   award('teiji');
@@ -2944,8 +3005,12 @@ function award(id) {
   if (!sv.title && !t.test) sv.title = id;   // はじめての称号は自動でつける(テスト中の称号はつけない)
   sfx.power(); notice(`称号ゲット!\n「${t.name}」`);
 }
-function titleName(id) { const t = TITLES.find(x => x.id === id); return t && (!t.test || isTester()) ? t.name : ''; }   // テスト中の称号はほかの人には見せない
-function titleChip(id) { const n = titleName(id); return n ? `<span class="ttl">${escapeHtml(n)}</span>` : ''; }
+function champNo(id) { const m = /^champ-(\d+)$/.exec(String(id || '')); return m ? Number(m[1]) : 0; }   // 第〇回王者(サーバーが配る)
+function titleName(id) {
+  if (champNo(id)) return `第${champNo(id)}回王者`;
+  const t = TITLES.find(x => x.id === id); return t && (!t.test || isTester()) ? t.name : '';   // テスト中の称号はほかの人には見せない
+}
+function titleChip(id) { const n = titleName(id); return n ? `<span class="ttl${champNo(id) ? ' champ' : ''}">${escapeHtml(n)}</span>` : ''; }
 
 // ---- 着せ替え(キャラの見た目に足す) ----
 function dressHero(root, look, equip) {
@@ -3011,7 +3076,7 @@ function renderLocker() {
   if (lkTab === 'titles') {
     body.innerHTML = visibleTitles().map(t => {
       const have = sv.titles.includes(t.id), on = sv.title === t.id;
-      return `<div class="lk-item ${have ? '' : 'locked'}"><span><b>${have ? escapeHtml(t.name) : '???'}</b><small>${escapeHtml(t.desc)}</small></span>` +
+      return `<div class="lk-item ${have ? '' : 'locked'}"><span><b${t.champ ? ' class="champ"' : ''}>${have ? escapeHtml(t.name) : '???'}</b><small>${escapeHtml(t.desc)}</small></span>` +
         (have ? `<button class="btn ${on ? 'primary' : ''}" data-title="${t.id}">${on ? 'つけている' : 'つける'}</button>` : '<span class="lk-lock">未獲得</span>') + '</div>';
     }).join('') + `<div class="lk-item"><span><b>称号をはずす</b><small>ランキングに称号を出さない</small></span><button class="btn" data-title="">はずす</button></div>`;
     body.querySelectorAll('[data-title]').forEach(b => b.onclick = () => { sv.title = b.dataset.title; persist('meta'); renderLocker(); });
@@ -3037,6 +3102,11 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 8, date: '2026/10/14', title: '今期ランキングがスタート!', items: [
+    'ランキングに「今期」を追加。半月ごと(1〜15日 / 16日〜月末)にリセットされます。通常モードの点で競います',
+    '期が終わったときの1位には、赤い特別な称号「第〇回王者」をプレゼント!(次にログインしたときに届きます)',
+    '第1回は 10/16〜10/31。今までのランキングは「歴代」としてそのまま残っています',
+  ] },
   { id: 7, date: '2026/10/10', title: '繁忙期のボスが「研修レポート」に', items: [
     '繁忙期のボス「卒論」を「研修レポート」に変えました(社会人なので)',
     'タイトル画面の自己ベストが、ニックネームごとに出るようになりました(Web版。1つの端末で何人も遊んでもまざりません)',
@@ -3084,6 +3154,7 @@ function openNews() {
 $('csNews').onclick = () => openNews();
 $('closeNews').onclick = () => openCharsel();
 document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => { setSelMode(b.dataset.m); b.blur(); });
+document.querySelectorAll('#csYear [data-y]').forEach(b => b.onclick = () => { setSelYear(Number(b.dataset.y)); b.blur(); });
 
 // ダブルタップ・ピンチで拡大しない(iPhone の Safari は viewport の指定だけでは止まらないため)
 document.addEventListener('gesturestart', e => e.preventDefault());
