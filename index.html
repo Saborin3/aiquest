@@ -1766,7 +1766,7 @@ function beltTex(alongX) {
   const t = new THREE.CanvasTexture(beltTexCache[key]); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 }
 function updateTimeLimit(dt) {   // 終電ダッシュ:0になったら(無敵中でも)ミス
-  if (!(G.timeLeft > 0)) return;
+  if (!(G.timeLeft > 0) || TUT.on) return;   // チュートリアル(練習)中は終電の時間も止める
   G.timeLeft -= dt;
   if (G.timeLeft <= 0) { G.timeLeft = 0.001; toast('終電に乗り遅れた…', true); G.inv = 0; G.safe = 0; hurt('終電に乗り遅れた'); }
 }
@@ -2001,7 +2001,8 @@ function stickMove(e) {
   const r = stickEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, max = r.width / 2 - 10;
   let dx = e.clientX - cx, dy = e.clientY - cy; const d = Math.hypot(dx, dy);
   if (d > max) { dx = dx / d * max; dy = dy / d * max; }
-  stick.x = dx / max; stick.y = dy / max; knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  const k = r.width / (stickEl.offsetWidth || r.width);   // チュートリアルで大きくしているとき、つまみが枠の外に出ないように
+  stick.x = dx / max; stick.y = dy / max; knob.style.transform = `translate(${dx / k}px, ${dy / k}px)`;
 }
 stickEl.addEventListener('pointerdown', e => { stick.id = e.pointerId; stickEl.setPointerCapture(e.pointerId); stickMove(e); });
 stickEl.addEventListener('pointermove', e => { if (e.pointerId === stick.id) stickMove(e); });
@@ -2133,7 +2134,7 @@ function setMode(m) {
 }
 function updateHud() {
   $('hStage').textContent = `STAGE ${stageNo()} ${curStages()[G.stage].name}`;
-  $('hLine').innerHTML = `${G.playMode === 'year2ot' ? '【2年目・残業】' : G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ <span id="hLife">LIFE ${G.lives}</span> ・ <span id="hScore">SCORE ${G.score}</span> ・ ${G.doru}どる`;
+  $('hLine').innerHTML = `${G.playMode === 'year2ot' ? '【2年目・残業】' : G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ <span id="hLife"${tutBigAttr('hLife')}>LIFE ${G.lives}</span> ・ <span id="hScore"${tutBigAttr('hScore')}>SCORE ${G.score}</span> ・ ${G.doru}どる`;
   $('hSPN').textContent = G.special; $('hSP').className = 'ammo sp' + (G.special <= 0 ? ' none' : '');
   $('hAmmoN').textContent = G.ammo;
   $('hAmmo').className = 'ammo' + (G.ammo <= 0 ? ' empty' : G.ammo <= 3 ? ' low' : '');
@@ -2774,8 +2775,10 @@ function showTut() {
   placeTut();
   if (s.next && TUT.kind === 'rank') setTimeout(() => $('tutNext').focus(), 60);   // ゲーム中はフォーカスしない(スペースのジャンプで押されないように)
 }
+// スコア・ライフは表示を作り直すたびに要素が新しくなるので、作るときにも目印をつける
+function tutBigAttr(id) { const s = TUT.on && TUT.kind === 'game' ? tutCur() : null; return s && (s.target || []).includes(id) ? ' class="tut-big"' : ''; }
 function markTutBig() {   // 説明している表示・ボタンを大きくする(ランキングの大きな枠はそのまま)
-  for (const el of tutBig) el.classList.remove('tut-big');
+  document.querySelectorAll('.tut-big').forEach(el => el.classList.remove('tut-big'));
   tutBig = [];
   const s = tutCur(); if (!s || TUT.kind !== 'game') return;
   for (const id of s.target || []) { const el = $(id); if (el) { el.classList.add('tut-big'); tutBig.push(el); } }
@@ -2880,7 +2883,7 @@ function endTutorial(abort = false, noReset = false) {
   if (!TUT.on) return;
   const kind = TUT.kind; TUT.on = false; TUT.kind = '';
   $('tut').classList.add('hidden'); $('tutRings').innerHTML = ''; $('tutTags').innerHTML = ''; $('toast').style.top = ''; TUT.cardAt = null;
-  for (const el of tutBig) el.classList.remove('tut-big'); tutBig = [];
+  document.querySelectorAll('.tut-big').forEach(el => el.classList.remove('tut-big')); tutBig = [];
   if (kind === 'rank') { store.set('rankTutSeen', true); return; }
   store.set('tutDone', true);
   // チュートリアルは「練習」。無敵・課金パワー1回タダで遊んだ分で得をしないように、終わったらステージを最初からにもどす
