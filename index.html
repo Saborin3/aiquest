@@ -39,6 +39,7 @@ canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: blo
 button { font-family: var(--font-body); cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
 .hidden { display: none !important; }
+.invis { visibility: hidden !important; }
 /* ダブルタップで拡大しない(ボタンや画面は manipulation、ゲームの部分は none) */
 *, *::before, *::after { touch-action: manipulation; }
 canvas, #touch, #touch * { touch-action: none; }
@@ -298,7 +299,8 @@ body.touch .kh { display: none; }
 .tabs.small button { padding: 5px 11px; font-size: 13px; }
 .cs-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 22px; margin-top: 12px; }
 .cs-row .cs-mode, .cs-row .cs-stage { margin-top: 0; }
-#csModeNote { margin: 8px 0 0; }
+.cs-row .cs-stage { flex-basis: 100%; }   /* ステージ選択はいつも年・モードの下の段に(1年目と2年目で場所が変わらないように) */
+#csModeNote { margin: 8px 0 0; min-height: 1.5em; }
 .cs-mode { display: flex; align-items: center; justify-content: center; gap: 8px 12px; flex-wrap: wrap; margin-top: 12px; color: var(--paper); font-weight: 800; font-size: 14px; }
 .cs-mode .seg { box-shadow: inset 0 0 0 2px rgba(246,245,240,.6); }
 .cs-mode .seg button { color: var(--paper); padding: 7px 12px; }
@@ -1808,7 +1810,7 @@ function canThrow() {
 function throwAI() {
   if (G.mode !== 'play' || !canThrow()) return;
   G.throwLog.push(G.now); G.ammo -= 1; sfx.throw(); G.hero.userData.throwT = 0.2; say(G.char.name, 'throw');
-  if (TUT.on && TUT.kind === 'game') { TUT.thrown += 1; setTimeout(() => tutEvent('throw'), 0); }   // チュートリアル中に投げた分は、あとで返す
+  if (TUT.on && TUT.kind === 'game') setTimeout(() => tutEvent('throw'), 0);
   if (G.log) G.log.ai_throws += 1;
   if (G.st) G.st.throws += 1; G.runThrows = (G.runThrows || 0) + 1;
   const fwd = new THREE.Vector3(Math.sin(G.yaw), 0, Math.cos(G.yaw)), right = new THREE.Vector3(Math.cos(G.yaw), 0, -Math.sin(G.yaw));
@@ -1876,6 +1878,7 @@ function hurt(cause = '') {
 function checkGoal() {
   const p = G.player, g = G.goal;
   if (Math.abs(p.x - g.x) > 1.2 || Math.abs(p.z - g.z) > 1.2) return;
+  if (TUT.on) { if (!checkGoal.t || G.now - checkGoal.t > 2) { checkGoal.t = G.now; sfx.locked(); toast('チュートリアル中は\n退勤できない!', true); } return; }   // 練習中は無敵なので、クリアさせない
   if (bossAlive()) { if (!checkGoal.t || G.now - checkGoal.t > 2) { checkGoal.t = G.now; sfx.locked();
     const b = G.enemies.find(e => e.boss); toast(`${b.label.replace('\n', '')}を倒さないと\n退勤できない!`, true); } return; }
   sfx.clear(); say(G.char.name, 'clear');
@@ -2212,7 +2215,9 @@ function refreshCharsel() {
     `<span>AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span>課金パワー ${sv.special}</span>`;
   document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); b.classList.toggle('hidden', b.dataset.m === 'daily' && G.selYear === 2); });
   const note = $('csModeNote');
-  $('csStage').classList.toggle('hidden', play !== 'normal' && !y2); note.classList.toggle('hidden', play === 'normal');
+  // 見せないときも場所は取っておく(1年目・2年目・モードで、画面の中身が上下にずれないように)
+  $('csStage').classList.toggle('invis', play !== 'normal' && !y2); note.classList.remove('hidden'); note.classList.toggle('invis', play === 'normal' && !y2);
+  if (play === 'normal' && !y2) note.textContent = '\u00a0';
   if (play === 'year2ot') note.textContent = `2年目の残業(テスト中):ステージ6から。敵が速くて硬い・ボスが追ってくる・AIは少なめ・終電は +${OVERTIME2.timeAdd}秒。スコアとどるが ×${OVERTIME2.score}`;
   if (y2) note.textContent = '2年目編(テスト中・テスト用アカウントだけ):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間';
   if (play === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・ボスがどこまでも追ってくる・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
@@ -2290,7 +2295,7 @@ function setDevice(dev) {   // 一時停止画面のまま、説明と表示だ�
 $('segPC').onclick = () => setDevice('pc');
 $('segTouch').onclick = () => setDevice('touch');
 function retryStage() {
-  endTutorial(true);
+  endTutorial(true, true);
   // やり直したら、スコア・AI・課金パワーはステージの最初に戻す(ブロックを叩き直して増やせないように)。ライフは増えない
   endLog('retry'); G.score = G.stageScore0 || 0;
   const lives = Math.min(G.lives, G.stageLives0 || G.lives);
@@ -2723,7 +2728,7 @@ function gameTutSteps() {
     { id: 'score', title: 'スコアとライフ', target: ['hScore', 'hLife'], next: '次へ',
       text: '<b>SCORE</b> が今のスコア、<b>LIFE</b> がのこりのライフ。敵にぶつかったり落ちたりすると減って、0でゲームオーバー(今はミスにならないよ)。' },
     { id: 'goal', title: 'クリアとランキング', target: [], next: 'スタート!',
-      text: 'おくの<b>「退勤」ドア</b>に入ればクリア(ボスがいる面は倒してから)。スコアは<b>ランキング</b>に入るよ。キャラ選択の「ランキング」で見られて、今期の1位には赤い称号!' },
+      text: 'おくの<b>「退勤」ドア</b>に入ればクリア(ボスがいる面は倒してから)。スコアは<b>ランキング</b>に入るよ。今期の1位には赤い称号!<br>ここまでは練習。「スタート!」で<b>ステージの最初から本番</b>(練習中の点や取ったものはリセット)。' },
   ];
 }
 function rankTutSteps() {
@@ -2871,20 +2876,23 @@ function tutAdvance() {
   showTut();
 }
 function tutNext() { const s = tutCur(); if (s && s.next && !TUT.wait) { tone(900, 900, 0.04, 'sine', 0.08); tutAdvance(); } }
-function endTutorial(abort = false) {
+function endTutorial(abort = false, noReset = false) {
   if (!TUT.on) return;
   const kind = TUT.kind; TUT.on = false; TUT.kind = '';
   $('tut').classList.add('hidden'); $('tutRings').innerHTML = ''; $('tutTags').innerHTML = ''; $('toast').style.top = ''; TUT.cardAt = null;
   for (const el of tutBig) el.classList.remove('tut-big'); tutBig = [];
   if (kind === 'rank') { store.set('rankTutSeen', true); return; }
   store.set('tutDone', true);
-  // チュートリアルの時間と投げたAIは、定時ボーナス・AI節約・ログに入れない(AIは返す)
-  const spent = G.now - TUT.t0, n = TUT.thrown;
-  if (G.st) { G.st.t0 = Math.min(G.now, G.st.t0 + Math.min(spent, G.now - G.st.t0)); G.st.throws = Math.max(0, G.st.throws - n); }
-  if (G.log) { G.log.t0 = Math.min(G.now, G.log.t0 + Math.min(spent, G.now - G.log.t0)); G.log.ai_throws = Math.max(0, G.log.ai_throws - n); }
-  G.runThrows = Math.max(0, (G.runThrows || 0) - n); G.ammo += n; G.throwLog = [];
-  if (G.player) updateHud();
-  if (!abort) { toast('チュートリアル完了!\n定時退社をめざそう!'); tone(660, 990, 0.2, 'sine', 0.1); }
+  // チュートリアルは「練習」。無敵・課金パワー1回タダで遊んだ分で得をしないように、終わったらステージを最初からにもどす
+  // (点・AI・課金パワー・取ったアイテム・倒した敵・時間がぜんぶ元どおり。ライフは増えない)。ログは 'tutorial' として別に残す
+  if (!noReset && G.mode === 'play' && G.player) {
+    endLog('tutorial');
+    G.score = G.stageScore0 || 0;
+    const lives = Math.min(G.lives, G.stageLives0 || G.lives);
+    G.ammo = G.stageAmmo0 ?? G.ammo; G.special = G.stageSpecial0 ?? G.special;
+    const sb = G.stageBonus; G.lives = lives; buildStage(G.stage); G.lives = lives; G.stageBonus = sb; G.throwLog = []; updateHud();
+    if (!abort) { toast('練習おわり!\nここから本番スタート!'); tone(660, 990, 0.2, 'sine', 0.1); }
+  }
 }
 $('tutNext').onclick = () => { tutNext(); $('tutNext').blur(); };
 $('tutSkip').onclick = () => { $('tutSkip').blur(); endTutorial(true); };
@@ -2982,6 +2990,7 @@ function rankTabs() { return ['season', 'normal', 'overtime', 'daily', 'year2', 
 function setRankTab(t, stage) {
   if (!rankTabs().includes(t)) t = 'season';
   document.querySelectorAll('#rkTabs [data-t]').forEach(b => { if (TEST_ONLY_MODES.includes(b.dataset.t)) b.classList.toggle('hidden', !isTester()); });
+  $('rkTabs').querySelector('[data-t=overtime]').textContent = isTester() ? '1年目残業' : '残業';   // 2年目が見える人には「1年目残業」(2年目残業と区別)
   rkTab = t; if (stage) rkStage = stage;
   document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
   document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
@@ -3240,7 +3249,7 @@ function updateCards(dt) {
   for (const c of G.cards || []) {
     if (c.got) continue;
     const m = c.mesh; m.rotation.y += dt * 2.4; m.position.y = c.y + Math.sin(G.now * 3 + c.y) * 0.12;
-    if (Math.abs(p.x - m.position.x) < 0.8 && Math.abs(p.z - m.position.z) < 0.8 && m.position.y > p.y - 0.4 && m.position.y < p.y + HEIGHT + 0.2) {
+    if (!TUT.on && Math.abs(p.x - m.position.x) < 0.8 && Math.abs(p.z - m.position.z) < 0.8 && m.position.y > p.y - 0.4 && m.position.y < p.y + HEIGHT + 0.2) {   // 練習中は拾えない
       c.got = true; scene.remove(m); G.st.cards += 1;
       const pts = addScore(BONUS.card); sfx.coin(); tone(1320, 1760, 0.12, 'square', 0.1, 0.08);
       floatText(`社員証!\n+${pts}`, m.position, 1.6, '#1f4e9c');
@@ -3261,6 +3270,7 @@ function notice(text) {
   next();
 }
 function award(id) {
+  if (TUT.on) return;   // チュートリアル(練習)中は称号をもらえない
   const sv = G.save, t = TITLES.find(x => x.id === id);
   if (!t || sv.titles.includes(id)) return;
   sv.titles.push(id);
