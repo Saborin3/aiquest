@@ -134,6 +134,49 @@ body.touch .kh { display: none; }
 .ammo { background: var(--paper); color: var(--ink); text-shadow: none; border-radius: 6px; padding: 4px 10px; font-size: 18px; }
 .ammo b { color: var(--blue); font-family: var(--font-title); font-weight: 400; margin-right: 6px; }
 .ammo.low { background: #ffd9b8; } .ammo.empty { background: #ffb3a1; }
+.ammo.sp b { color: #b86e00; } .ammo.sp.none { opacity: .6; }
+
+/* チュートリアル(はじめてのとき)。弱視の人にも見つけやすいように:まわりを暗く・太い二重の枠・名札・対象を大きく */
+#tut { position: fixed; inset: 0; z-index: 14; pointer-events: none; }
+#tut.rank { z-index: 25; }   /* ランキングの見方は、ランキング画面(z-index 20)の上に出す */
+#tutDim { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tut-ring { position: fixed; border: 5px solid #ffe600; border-radius: 12px; pointer-events: none;
+  outline: 3px solid #000; box-shadow: inset 0 0 0 3px #000, 0 0 0 8px rgba(255,230,0,.45), 0 0 26px 8px rgba(255,230,0,.85);
+  animation: tutPulse 1s ease-in-out infinite; }
+@keyframes tutPulse { 50% { transform: scale(1.08); } }
+.tut-tag { position: fixed; pointer-events: none; background: #ffe600; color: #000; border: 3px solid #000; border-radius: 8px;
+  padding: 2px 10px; font: 900 16px/1.35 var(--font-body, sans-serif); white-space: nowrap; text-shadow: none; box-shadow: 0 3px 0 rgba(0,0,0,.45); }
+.tut-big { transform: scale(1.3) !important; transition: transform .2s; position: relative; z-index: 1; }
+#hud .tut-big { display: inline-block; }
+#hScore, #hLife { display: inline-block; }
+/* 大きくなる向き:画面のはしからはみ出さないように、はしを支点にする */
+#hSP.tut-big, #hAmmo.tut-big { transform-origin: 100% 0; }
+#hScore.tut-big, #hLife.tut-big { transform: scale(1.25) !important; transform-origin: 50% 0; margin: 0 16px; }   /* 横に並ぶ2つが重ならないように間をあける */
+#bJump.tut-big, #bThrow.tut-big, #bSP.tut-big { transform-origin: 100% 100%; } #stick.tut-big { transform-origin: 0 100%; }
+@media (prefers-reduced-motion: reduce) { .tut-ring { animation: none; } .tut-big { transition: none; } }
+#tutCard { position: fixed; left: 16px; top: 80px; width: min(470px, calc(100vw - 32px)); background: #fff; color: #000;
+  border: 3px solid #000; border-radius: 10px; padding: 10px 16px 12px;
+  pointer-events: none; box-shadow: 0 6px 0 rgba(0,0,0,.35); font-size: 17px; line-height: 1.55; text-shadow: none; font-weight: 600; }
+#tutCard button { pointer-events: auto; }   /* カードがスティックなどの操作をじゃましないように、押せるのはボタンだけ */
+#tutCard .tut-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: #333; margin: 0; }
+#tutSkip { font-size: 14px; padding: 4px 10px; border: 2px solid #000; border-radius: 99px; background: #fff; color: #000; font-weight: 800; }
+#tutCard h3 { margin: 2px 0 4px; font-family: var(--font-title); font-weight: 400; font-size: 24px; }
+#tutCard p { margin: 0 0 6px; }
+#tutCard b { background: #ffe600; padding: 0 3px; border-radius: 3px; }
+#tutCard kbd { display: inline-block; min-width: 1.6em; padding: 0 6px; border-radius: 4px; background: #000; color: #fff;
+  font: 800 15px/1.5 inherit; text-align: center; }
+#tutAct { font-weight: 900; color: #b00020; margin-bottom: 0 !important; font-size: 1.05em; }
+#tutChecks { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.tut-chk { padding: 2px 12px; border-radius: 99px; background: #fff; border: 2px solid #000; font-weight: 900; font-size: 15px; }
+.tut-chk.on { background: #ffe600; }
+#tutCard .row { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 4px; }
+#tutCard .btn { padding: 8px 18px; font-size: 17px; border: 3px solid #000; background: #ffe600; color: #000; }
+/* スマホの横画面など:小さめに。置き場所はプログラムが、光っている所・ボタン・キャラをよけて決める */
+@media (max-height: 460px) { #tutCard { width: min(360px, 46vw); font-size: 14px; line-height: 1.45; padding: 6px 10px 8px; }
+  #tutCard h3 { font-size: 18px; margin: 0 0 2px; } #tutCard p { margin-bottom: 3px; } #tutChecks { margin-bottom: 3px; }
+  .tut-chk { font-size: 13px; padding: 1px 9px; } #tutCard .btn { padding: 4px 14px; font-size: 15px; } #tutCard kbd { font-size: 13px; }
+  .tut-tag { font-size: 14px; padding: 1px 8px; } #tutSkip { font-size: 12px; padding: 2px 8px; } }
+@media (max-height: 340px) { #tutCard { font-size: 12.5px; } #tutCard h3 { font-size: 15px; } }
 .icon-btn { pointer-events: auto; border: 0; border-radius: 6px; background: rgba(246,245,240,.92); color: var(--ink);
   font-weight: 800; font-size: 14px; padding: 7px 11px; }
 #status { font-size: 13px; color: var(--yellow); }
@@ -414,8 +457,23 @@ body.touch .kh { display: none; }
     <span id="status"></span>
   </div>
   <div class="right">
+    <span class="ammo sp none" id="hSP"><b>課金</b><span id="hSPN">0</span></span>
     <span class="ammo" id="hAmmo"><b>AI</b><span id="hAmmoN">12</span></span>
     <button class="icon-btn" id="bPause" aria-label="一時停止">II</button>
+  </div>
+</div>
+<div id="tut" class="hidden">
+  <svg id="tutDim" aria-hidden="true"><defs><mask id="tutMask"><rect width="100%" height="100%" fill="#fff"/><g id="tutHoles"></g></mask></defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,.6)" mask="url(#tutMask)"/></svg>
+  <div id="tutRings"></div>
+  <div id="tutTags"></div>
+  <div id="tutCard" role="dialog" aria-live="polite" aria-label="チュートリアル">
+    <p class="tut-top"><span id="tutStep">チュートリアル</span><button class="linky" id="tutSkip">とばす</button></p>
+    <h3 id="tutTitle"></h3>
+    <p id="tutText"></p>
+    <div id="tutChecks"></div>
+    <p id="tutAct"></p>
+    <div class="row" id="tutRow"><button class="btn primary" id="tutNext">次へ</button></div>
   </div>
 </div>
 <div id="toast" class="hidden"></div>
@@ -450,6 +508,7 @@ body.touch .kh { display: none; }
       <button class="btn primary" id="resume">つづける</button>
       <button class="btn" id="retry">この面をやり直す</button>
       <button class="btn" id="toMenu">キャラ選択へ</button>
+      <button class="btn" id="tutAgain">チュートリアル</button>
     </div>
   </div>
 </section>
@@ -539,7 +598,8 @@ const STAGES = [
     blocks: [[[0, 0.5, 8], [4, 1, 4], COL.desk], [[0, 1, 12], [4, 2, 4], COL.desk], [[0, 1.5, 16], [4, 3, 4], COL.desk],
              [[5, 4, 20], [3, 0.5, 3], COL.plat], [[0, 5, 24], [3, 0.5, 3], COL.plat], [[0, 0.5, 30], [6, 1, 6], COL.goal]],
     qblocks: [[[3, 4, 4], 'coffee'], [[-3, 4, 4], 'point']], lifeblocks: [[0, 9, 24]], kakin: [-4, 4, 12],
-    enemies: [{ p: [0, 0.5, 5], l: '課題', axis: [1, 0, 0], patrol: 4 }, { p: [6, 0.5, 0], l: 'レポート', axis: [0, 0, 1], patrol: 3 },
+    // 課題・レポートは、スタートの正面(階段へ向かう道)からずらしてある(はじめての人がスタート直後にぶつかってミスしていたので)
+    enemies: [{ p: [5, 0.5, 4], l: '課題', axis: [1, 0, 0], patrol: 1.5, speed: 1.5 }, { p: [10, 0.5, 2], l: 'レポート', axis: [0, 0, 1], patrol: 2 },
               { p: [-6, 0.5, 8], l: '問題', axis: [0, 0, 1], patrol: 4, speed: 3 }, { p: [4, 0.5, 14], l: '議事録', axis: [0, 0, 1], patrol: 3 },
               { p: [0, 1.5, 29], l: '締切', axis: [1, 0, 0], patrol: 2, speed: 3 }],
     boss: null, goal: [0, 1, 31] },
@@ -1089,6 +1149,7 @@ function startRun(ch, mode = selPlay()) {
   G.runFrom = mode === 'normal' ? Math.min(G.startStage, G.save.unlocked - 1) : mode === 'daily' ? G.daily.stage
     : mode === 'year2' ? Math.max(0, Math.min(G.startStage2 || 0, (G.save.unlocked2 || 1) - 1)) : 0;
   buildStage(G.runFrom); setMode('play');
+  if (G.tutPending && mode === 'normal') { G.tutPending = false; startTutorial(); }
 }
 function respawn(full) {
   const r = (!full && G.respawnPt) ? G.respawnPt : new THREE.Vector3(0, 0, 0);
@@ -1438,8 +1499,10 @@ function ringTex() {
   return (ringTexCache = new THREE.CanvasTexture(c));
 }
 function useSpecial() {
-  if (G.mode !== 'play' || G.special <= 0 || G.sp) return;
-  G.special -= 1;
+  const free = tutFreeSP();   // チュートリアルでは、持っていなくても1回だけ使える
+  if (G.mode !== 'play' || (G.special <= 0 && !free) || G.sp) return;
+  if (!free) G.special -= 1;
+  tutEvent('sp');
   if (G.hero) G.hero.visible = true;   // ミスのあとの点滅中でも、演出の間は見えるように
   const p = G.player;
   const targets = G.enemies.filter(e => !e.dead && !e.immune && e.mesh.position.distanceTo(p) < 40)
@@ -1745,6 +1808,7 @@ function canThrow() {
 function throwAI() {
   if (G.mode !== 'play' || !canThrow()) return;
   G.throwLog.push(G.now); G.ammo -= 1; sfx.throw(); G.hero.userData.throwT = 0.2; say(G.char.name, 'throw');
+  if (TUT.on && TUT.kind === 'game') { TUT.thrown += 1; setTimeout(() => tutEvent('throw'), 0); }   // チュートリアル中に投げた分は、あとで返す
   if (G.log) G.log.ai_throws += 1;
   if (G.st) G.st.throws += 1; G.runThrows = (G.runThrows || 0) + 1;
   const fwd = new THREE.Vector3(Math.sin(G.yaw), 0, Math.cos(G.yaw)), right = new THREE.Vector3(Math.cos(G.yaw), 0, -Math.sin(G.yaw));
@@ -1801,6 +1865,7 @@ function updateFx(dt) { for (const f of G.fx.slice()) if (!f.update(dt)) { scene
 // ---------------- スコア・ダメージ・クリア ----------------
 function addScore(n) { const pts = Math.round(n * G.char.score * modeMul()); G.score += pts; updateHud(); return pts; }
 function hurt(cause = '') {
+  if (TUT.on && G.mode === 'play') { if (cause === '落下') { G.inv = 0; respawn(false); } return; }   // チュートリアル中はミスにならない
   if (G.inv > 0 || G.safe > 0 || G.mode !== 'play') return;   // inv:ミスのあと(点滅) / safe:踏んだ直後・必殺技のあと(点滅しない)
   if (G.log) { const p = G.player; G.log.deaths += 1; G.log.causes.push(cause); G.log.spots.push([p.x, p.y, p.z].map(v => Math.round(v))); }
   if (G.st) G.st.deaths += 1; G.runDeaths = (G.runDeaths || 0) + 1;
@@ -1859,6 +1924,7 @@ window.addEventListener('keydown', e => {
     if (k === 'h' || k === 'Escape') openPause();
     if (k === 'r') retryStage();
     if (k === 'c') toggleView();
+    if (k === 'Enter' && TUT.on) tutNext();
   } else if (G.mode === 'pause') {
     if (k === 'h' || k === 'Escape' || k === 'Enter') closePause();
   } else if (G.mode === 'title') {
@@ -1911,7 +1977,7 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });   // 別の画面に移ったら押しっぱなしを解除
 canvas.addEventListener('mousedown', () => { if (G.mode === 'play' && G.device === 'pc') throwAI(); });
-function jump() { G.vy = BASE_JUMP * G.char.jump * (G.run > 0.7 ? DASH_JUMP : 1); G.grounded = false; sfx.jump(); say(G.char.name, 'jump'); }
+function jump() { G.vy = BASE_JUMP * G.char.jump * (G.run > 0.7 ? DASH_JUMP : 1); G.grounded = false; sfx.jump(); say(G.char.name, 'jump'); tutEvent('jump'); }
 // ダッシュ:G.run が 0→1 でだんだん速くなる。空中では速さを保つ(ダッシュジャンプで遠くまで飛べる)
 function runUpdate(dt, forward, instant) {
   G.run = G.run || 0;
@@ -2005,6 +2071,7 @@ function update(dt) {
   for (const b of G.qblocks) if (b.kind === 'kakin' && !b.used) b.mesh.rotation.y += dt * 1.5;
   if (G.mode === 'play') updateTimeLimit(dt);
   if (G.mode === 'play') checkGoal();
+  if (TUT.on) tutTick(dt);
   status();
 }
 function placeCamera(dt) {
@@ -2033,6 +2100,7 @@ function loop(t) {
   if (G.mode === 'locker') updateLocker(dt);
   else if (lkHero) closeLockerPreview();
   if (G.player && G.mode !== 'ending' && G.mode !== 'locker') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
+  if (TUT.on) placeTut();
   } catch (err) { if (!loop.warned) { loop.warned = true; console.error(err); } }   // 1回のエラーでゲーム全体が止まらないように
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
@@ -2041,6 +2109,7 @@ function loop(t) {
 // ---------------- 画面(DOM) ----------------
 const $ = id => document.getElementById(id);
 function setMode(m) {
+  if (TUT.on && !(TUT.kind === 'rank' ? m === 'ranking' : ['play', 'pause', 'special'].includes(m))) endTutorial(true);
   G.mode = m;
   setTimeout(bgmScene, 0);
   if (m === 'play' && document.activeElement && document.activeElement.blur) document.activeElement.blur();   // スペースでボタンが押されないように
@@ -2061,17 +2130,18 @@ function setMode(m) {
 }
 function updateHud() {
   $('hStage').textContent = `STAGE ${stageNo()} ${curStages()[G.stage].name}`;
-  $('hLine').textContent = `${G.playMode === 'year2ot' ? '【2年目・残業】' : G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ LIFE ${G.lives} ・ SCORE ${G.score} ・ ${G.doru}どる`;
+  $('hLine').innerHTML = `${G.playMode === 'year2ot' ? '【2年目・残業】' : G.playMode === 'year2' ? '【2年目】' : G.playMode === 'overtime' ? '【残業】' : G.playMode === 'daily' ? '【お題】' : ''}${G.char.name} ・ <span id="hLife">LIFE ${G.lives}</span> ・ <span id="hScore">SCORE ${G.score}</span> ・ ${G.doru}どる`;
+  $('hSPN').textContent = G.special; $('hSP').className = 'ammo sp' + (G.special <= 0 ? ' none' : '');
   $('hAmmoN').textContent = G.ammo;
   $('hAmmo').className = 'ammo' + (G.ammo <= 0 ? ' empty' : G.ammo <= 3 ? ' low' : '');
-  $('bSP').classList.toggle('hidden', G.special <= 0);
+  $('bSP').classList.toggle('hidden', G.special <= 0 && !tutFreeSP());
 }
 let statusText = '';
 function status() {
   const s = [];
   if (G.now < G.coffeeUntil) s.push(`コーヒー ${Math.ceil(G.coffeeUntil - G.now)}秒`);
   if (G.now < G.rateUntil) s.push(`レート制限 ${Math.ceil(G.rateUntil - G.now)}秒`);
-  if (G.special > 0) s.push(`課金パワー ×${G.special}${G.device === 'pc' ? '(Eで発動)' : ''}`);
+  if (G.special > 0 && G.device === 'pc') s.push('Eで課金パワー発動');   // 残りの数は右上
   if (G.timeLeft > 0) s.push(`終電まで ${Math.ceil(G.timeLeft)}秒`);
   if (G.st && !isY2()) s.push(`社員証 ${G.st.cards}/3`);
   if (G.combo >= 2) s.push(`${G.combo}コンボ!`);
@@ -2190,7 +2260,7 @@ function openPause(title = '一時停止中') {
   $('helpBody').innerHTML = RULES + helpHTML(G.device);
   $('segPC').setAttribute('aria-pressed', String(G.device === 'pc')); $('segTouch').setAttribute('aria-pressed', String(G.device === 'touch'));
   const inGame = !!G.player && G.mode === 'play';
-  $('retry').classList.toggle('hidden', !inGame); $('toMenu').classList.toggle('hidden', !inGame);
+  $('retry').classList.toggle('hidden', !inGame); $('toMenu').classList.toggle('hidden', !inGame); $('tutAgain').classList.toggle('hidden', !inGame);
   pauseReturn = inGame ? 'play' : G.mode;
   setMode('pause');
 }
@@ -2198,6 +2268,7 @@ let pauseReturn = 'play';
 function closePause() { setMode(pauseReturn); refreshTitle(); }
 $('bPause').onclick = () => { if (G.mode === 'play') openPause(); };
 $('resume').onclick = closePause;
+$('tutAgain').onclick = () => { closePause(); if (G.mode === 'play') startTutorial(); };
 $('retry').onclick = () => { setMode('play'); retryStage(); };
 function dropStagePickups() {   // クリアしていないステージで増えた分は持ち帰らない(使った分はそのまま減る)
   if (G.stageAmmo0 !== undefined) G.ammo = Math.min(G.ammo, G.stageAmmo0);
@@ -2219,6 +2290,7 @@ function setDevice(dev) {   // 一時停止画面のまま、説明と表示だ�
 $('segPC').onclick = () => setDevice('pc');
 $('segTouch').onclick = () => setDevice('touch');
 function retryStage() {
+  endTutorial(true);
   // やり直したら、スコア・AI・課金パワーはステージの最初に戻す(ブロックを叩き直して増やせないように)。ライフは増えない
   endLog('retry'); G.score = G.stageScore0 || 0;
   const lives = Math.min(G.lives, G.stageLives0 || G.lives);
@@ -2436,6 +2508,10 @@ function startWith(acct, save, msg, created = false) {
   if (G.selMode === 'year2') { G.selMode = 'normal'; G.selYear = 2; }
   G.startStage2 = Math.max(0, (G.save.unlocked2 || 1) - 1);
   picked = Math.max(0, Math.min(CHARS.length - 1, Number(G.save.character) || 0));   // 最初はいつものキャラを選んでおく
+  // チュートリアル:はじめて(新しく登録した・このブラウザで初めて・まだ1面も進んでいない)なら、最初のプレイで出す
+  G.tutPending = !store.get('tutDone', false) && (created || !store.get('introSeen', false) || (!!acct && (G.save.unlocked || 1) <= 1 && !(G.save.best > 0)));
+  // はじめての人(チュートリアルが出る人・まだ1面も進んでいない人)は、いちばん扱いやすい先輩を選んでおく
+  if (!picked && (G.tutPending || ((G.save.unlocked || 1) <= 1 && !(G.save.best > 0)))) picked = 1;
   // はじめて(新しく登録した・このブラウザで初めて)なら、先にストーリーとあそびかた
   if (created || !store.get('introSeen', false)) {
     G.startStage = acct ? Math.max(0, G.save.unlocked - 1) : 0;
@@ -2628,6 +2704,191 @@ function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return o
 $('gcSpin').onclick = spinGacha;
 $('gcNext').onclick = gachaNext;
 
+// ================= チュートリアル(はじめてログインしたとき、最初のプレイで出る) =================
+// ゲームの画面の上で、表示の場所を光らせながら、実際に動かして覚える。終わったらランキングを初めて開いたときに見方を説明する
+const TUT = { on: false, kind: '', i: 0, t0: 0, thrown: 0, moved: {}, wait: false };
+const TUT_HOLD = 0.25;   // この秒数その方向に動いたらチェック
+function gameTutSteps() {
+  const t = G.device === 'touch', k = s => `<kbd>${s}</kbd>`;
+  return [
+    { id: 'move', title: '動いてみよう', target: t ? ['stick'] : [], checks: ['前', 'うしろ', '左', '右'], act: '▶ 4方向ぜんぶ動いてみよう',
+      text: t ? '光っている<b>スティック</b>を倒した方向に歩く。最後まで倒すとダッシュ。画面の右側をなぞると視点が回る。'
+              : `${k('W')} 前 ・ ${k('S')} うしろ ・ ${k('A')} 左 ・ ${k('D')} 右。${k('←')}${k('→')} で向きを変えて、${k('Shift')} でダッシュ。` },
+    { id: 'jump', title: 'ジャンプ', target: t ? ['bJump'] : [], act: '▶ ジャンプしてみよう',
+      text: `${t ? '<b>「ジャンプ」</b>' : k('スペース')}でジャンプ。ダッシュ中は高く遠くまで。敵は<b>上から踏む</b>と倒せて、スコア2倍!` },
+    { id: 'throw', title: 'AIを投げる', target: t ? ['hAmmo', 'bThrow'] : ['hAmmo'], act: `▶ ${t ? '「AI投げる」' : 'F かクリック'}で投げてみよう`, next: G.ammo <= 0 ? '次へ' : '',
+      text: '右上の光っている数字が<b>のこりのAI</b>。投げると1つ減って、0になると投げられない(?ブロックで増える)。近くの敵を自動で追いかけるよ。' },
+    { id: 'sp', title: '課金パワー(必殺技)', target: t ? ['hSP', 'bSP'] : ['hSP'], act: `▶ ${t ? '「課金」' : 'E'}で使ってみよう`,
+      text: `近くの敵をまとめて倒す。右上の光っているところが<b>のこりの回数</b>(課金ブロックで増える)。${G.special <= 0 ? '今回は<b>1回だけタダ</b>!' : ''}` },
+    { id: 'score', title: 'スコアとライフ', target: ['hScore', 'hLife'], next: '次へ',
+      text: '<b>SCORE</b> が今のスコア、<b>LIFE</b> がのこりのライフ。敵にぶつかったり落ちたりすると減って、0でゲームオーバー(今はミスにならないよ)。' },
+    { id: 'goal', title: 'クリアとランキング', target: [], next: 'スタート!',
+      text: 'おくの<b>「退勤」ドア</b>に入ればクリア(ボスがいる面は倒してから)。スコアは<b>ランキング</b>に入るよ。キャラ選択の「ランキング」で見られて、今期の1位には赤い称号!' },
+  ];
+}
+function rankTutSteps() {
+  return [
+    { id: 'tabs', title: 'ランキングの種類', target: ['rkTabs'], next: '次へ',
+      text: '<b>今期</b>:半月ごとの勝負(通常モード)/<b>歴代</b>:今までの自己ベスト/<b>残業・今日のお題</b>:モードごと/<b>タイム</b>:ステージごとの最速クリア。押すと切りかわるよ。' },
+    { id: 'note', title: '今期の期間とごほうび', target: ['rkNote'], next: '次へ',
+      text: '今期が何日までか、のこり何日か、前回の王者がここに出る。期が終わったときの1位には、赤い称号「第〇回王者」!' },
+    { id: 'list', title: '順位の見方', target: ['rankList'], next: 'わかった',
+      text: '上から順に、名前・称号・点数。★は全クリした人。<b>自分の行は色つき</b>で、10位より下でも一番下に自分の順位が出るよ。' },
+  ];
+}
+function tutList() { return TUT.kind === 'rank' ? rankTutSteps() : gameTutSteps(); }
+function tutCur() { return TUT.on ? tutList()[TUT.i] : null; }
+function tutFreeSP() { const s = tutCur(); return !!s && TUT.kind === 'game' && s.id === 'sp' && G.special <= 0; }
+function startTutorial() {
+  if (G.mode !== 'play') return;
+  if (TUT.on) endTutorial(true);
+  Object.assign(TUT, { on: true, kind: 'game', i: 0, t0: G.now, thrown: 0, moved: {}, wait: false });
+  showTut();
+}
+function startRankTut() {
+  Object.assign(TUT, { on: true, kind: 'rank', i: 0, moved: {}, wait: false });
+  showTut();
+}
+const TUT_TAGS = { stick: 'ここで移動', bJump: 'ジャンプ', hAmmo: 'のこりのAI', bThrow: 'AIを投げる', hSP: 'のこりの課金パワー', bSP: '課金パワー',
+  hScore: 'スコア', hLife: 'ライフ', rkTabs: 'ランキングの種類', rkNote: '期間とごほうび', rankList: '順位' };
+let tutBig = [];
+function showTut() {
+  const steps = tutList(), s = steps[TUT.i];
+  $('tut').classList.toggle('rank', TUT.kind === 'rank');
+  $('tutStep').textContent = `${TUT.kind === 'rank' ? 'ランキングの見方' : 'チュートリアル'} ${TUT.i + 1} / ${steps.length}`;
+  $('tutTitle').textContent = s.title; $('tutText').innerHTML = s.text;
+  $('tutAct').textContent = s.act || ''; $('tutAct').classList.toggle('hidden', !s.act);
+  $('tutNext').textContent = s.next || ''; $('tutRow').classList.toggle('hidden', !s.next);
+  $('tutSkip').textContent = TUT.kind === 'rank' ? 'とじる' : 'とばす';
+  const tg = s.target || [];
+  $('tutRings').innerHTML = tg.map(() => '<div class="tut-ring"></div>').join('');
+  $('tutTags').innerHTML = tg.map(id => `<div class="tut-tag">${TUT_TAGS[id] || ''}</div>`).join('');
+  renderTutChecks(); TUT.wait = false;
+  if (TUT.kind === 'game') updateHud();
+  markTutBig();
+  placeTut();
+  if (s.next && TUT.kind === 'rank') setTimeout(() => $('tutNext').focus(), 60);   // ゲーム中はフォーカスしない(スペースのジャンプで押されないように)
+}
+function markTutBig() {   // 説明している表示・ボタンを大きくする(ランキングの大きな枠はそのまま)
+  for (const el of tutBig) el.classList.remove('tut-big');
+  tutBig = [];
+  const s = tutCur(); if (!s || TUT.kind !== 'game') return;
+  for (const id of s.target || []) { const el = $(id); if (el) { el.classList.add('tut-big'); tutBig.push(el); } }
+}
+function renderTutChecks() {
+  const s = tutCur(), ok = c => (TUT.moved[c] || 0) >= TUT_HOLD;
+  $('tutChecks').innerHTML = s && s.checks ? s.checks.map(c => `<span class="tut-chk${ok(c) ? ' on' : ''}">${ok(c) ? '✓ ' : ''}${c}</span>`).join('') : '';
+}
+const ovl = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+function placeTut() {
+  if (!TUT.on) return;
+  // ゲーム中は、ステージ名の大きな表示が消えてから出す
+  const vis = TUT.kind === 'rank' ? G.mode === 'ranking' : G.mode === 'play' && $('banner').classList.contains('hidden');
+  $('tut').classList.toggle('hidden', !vis);
+  $('toast').style.top = '';
+  if (!vis) return;
+  const s = tutCur(), rings = $('tutRings').children, tags = $('tutTags').children, W = innerWidth, H = innerHeight;
+  const boxes = [], holes = [];
+  (s.target || []).forEach((id, n) => {
+    const el = $(id), r = rings[n], tag = tags[n]; if (!r) return;
+    const b = el && !el.closest('.hidden') ? el.getBoundingClientRect() : null;
+    const ok = !!(b && b.width);
+    r.style.display = ok ? '' : 'none'; if (tag) tag.style.display = ok ? '' : 'none';
+    if (!ok) return;
+    const pad = 7, x = b.left - pad, y = b.top - pad, w = b.width + pad * 2, h = b.height + pad * 2;
+    Object.assign(r.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+    holes.push(`<rect x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" rx="14" fill="#000"/>`);
+    boxes.push({ left: x - 12, top: y - 12, right: x + w + 12, bottom: y + h + 12 });
+    if (tag) {   // 名札:上半分の物は下に(▲)、下半分の物は上に(▼)
+      const label = TUT_TAGS[id] || '', below = b.top + b.height / 2 < H / 2;
+      tag.textContent = below ? `▲ ${label}` : `${label} ▼`;
+      const tw = tag.offsetWidth, th = tag.offsetHeight;
+      let tx = b.left + b.width / 2 - tw / 2; tx = Math.max(6, Math.min(W - tw - 6, tx));
+      let ty = below ? y + h + 10 : y - th - 10; ty = Math.max(6, Math.min(H - th - 6, ty));
+      Object.assign(tag.style, { left: `${tx}px`, top: `${ty}px` });
+      boxes.push({ left: tx - 6, top: ty - 6, right: tx + tw + 6, bottom: ty + th + 6 });
+    }
+  });
+  // 光らせる物があるときは、ほかを暗くする
+  $('tutHoles').innerHTML = holes.join('');
+  $('tutDim').style.display = holes.length ? '' : 'none';
+  // カードの置き場所:光っている所・名札・ボタン・キャラになるべくかぶらない所を選ぶ
+  const card = $('tutCard'), cw = card.offsetWidth, ch = card.offsetHeight;
+  const avoid = boxes.map(b => [b, 4]);
+  if (TUT.kind === 'game') {
+    for (const id of ['stick', 'bJump', 'bThrow', 'bSP', 'bLook', 'bView', 'bPause']) {
+      const el = $(id); if (el && !el.closest('.hidden') && !el.classList.contains('hidden')) avoid.push([el.getBoundingClientRect(), 2]);
+    }
+    if (G.player) {   // キャラ(画面上の位置)
+      const p0 = G.player.clone().project(camera), p1 = G.player.clone().add(new THREE.Vector3(0, 2.2, 0)).project(camera);
+      const x0 = (p0.x + 1) / 2 * W, yb = (1 - p0.y) / 2 * H, yt = (1 - p1.y) / 2 * H, hh = Math.max(40, yb - yt);
+      avoid.push([{ left: x0 - hh * 0.45, right: x0 + hh * 0.45, top: yt, bottom: yb }, 3]);
+    }
+  }
+  const hud = TUT.kind === 'game' ? Math.max($('hud').querySelector('.left').getBoundingClientRect().bottom, $('hud').querySelector('.right').getBoundingClientRect().bottom) + 10 : 8;
+  const cands = TUT.kind === 'rank' && boxes.length
+    ? [[(W - cw) / 2, boxes[0].bottom + 8], [(W - cw) / 2, boxes[0].top - ch - 8], [(W - cw) / 2, H - ch - 10], [(W - cw) / 2, 10]]
+    : [[12, hud], [(W - cw) / 2, hud], [W - cw - 12, hud], [12, H - ch - 12], [(W - cw) / 2, H - ch - 12], [W - cw - 12, H - ch - 12]];
+  let best = null;
+  for (const [cx0, cy0] of cands) {
+    const cx = Math.max(8, Math.min(W - cw - 8, cx0)), cy = Math.max(8, Math.min(H - ch - 8, cy0));
+    const r = { left: cx, top: cy, right: cx + cw, bottom: cy + ch };
+    const cost = avoid.reduce((t, [b, k]) => t + ovl(r, b) * k, 0);
+    if (!best || cost < best.cost - 1) best = { cost, cx, cy };
+  }
+  // ちらつかないように、少しの差では動かさない
+  const prev = TUT.cardAt;
+  if (!prev || Math.abs(prev.cx - best.cx) + Math.abs(prev.cy - best.cy) > 30 || prev.i !== TUT.i || prev.kind !== TUT.kind) TUT.cardAt = { ...best, i: TUT.i, kind: TUT.kind };
+  Object.assign(card.style, { left: `${TUT.cardAt.cx}px`, top: `${TUT.cardAt.cy}px` });
+  if (TUT.kind === 'game') {   // 「うわっ!」などのメッセージは、カードとかぶらない所に
+    const cr = card.getBoundingClientRect(), tt = H * 0.22;
+    $('toast').style.top = cr.top < tt + 60 && cr.bottom > tt ? `${cr.bottom + 10}px` : '';
+  }
+}
+function tutTick(dt) {
+  const s = tutCur(); if (!s || TUT.kind !== 'game' || s.id !== 'move' || TUT.wait) return;
+  const d = G.device === 'pc'
+    ? [keys.w && '前', keys.s && 'うしろ', keys.a && '左', keys.d && '右']
+    : [stick.y < -0.45 && '前', stick.y > 0.45 && 'うしろ', stick.x < -0.45 && '左', stick.x > 0.45 && '右'];
+  let changed = false;
+  for (const c of d.filter(Boolean)) {
+    const was = (TUT.moved[c] || 0) >= TUT_HOLD; TUT.moved[c] = (TUT.moved[c] || 0) + dt;
+    if (!was && TUT.moved[c] >= TUT_HOLD) { changed = true; tone(1200, 1200, 0.05, 'sine', 0.08); }
+  }
+  if (changed) renderTutChecks();
+  if (s.checks.every(c => (TUT.moved[c] || 0) >= TUT_HOLD)) tutEvent('move');
+}
+function tutEvent(id) {   // やってみてほしいことができたら、次へ
+  const s = tutCur(); if (!s || TUT.kind !== 'game' || s.id !== id || TUT.wait) return;
+  TUT.wait = true; const at = TUT.i;
+  tone(880, 1320, 0.12, 'sine', 0.1);
+  $('tutAct').textContent = 'OK!';
+  setTimeout(() => { if (TUT.on && TUT.i === at) tutAdvance(); }, 650);
+}
+function tutAdvance() {
+  TUT.i += 1;
+  if (TUT.i >= tutList().length) return endTutorial(false);
+  showTut();
+}
+function tutNext() { const s = tutCur(); if (s && s.next && !TUT.wait) { tone(900, 900, 0.04, 'sine', 0.08); tutAdvance(); } }
+function endTutorial(abort = false) {
+  if (!TUT.on) return;
+  const kind = TUT.kind; TUT.on = false; TUT.kind = '';
+  $('tut').classList.add('hidden'); $('tutRings').innerHTML = ''; $('tutTags').innerHTML = ''; $('toast').style.top = ''; TUT.cardAt = null;
+  for (const el of tutBig) el.classList.remove('tut-big'); tutBig = [];
+  if (kind === 'rank') { store.set('rankTutSeen', true); return; }
+  store.set('tutDone', true);
+  // チュートリアルの時間と投げたAIは、定時ボーナス・AI節約・ログに入れない(AIは返す)
+  const spent = G.now - TUT.t0, n = TUT.thrown;
+  if (G.st) { G.st.t0 = Math.min(G.now, G.st.t0 + Math.min(spent, G.now - G.st.t0)); G.st.throws = Math.max(0, G.st.throws - n); }
+  if (G.log) { G.log.t0 = Math.min(G.now, G.log.t0 + Math.min(spent, G.now - G.log.t0)); G.log.ai_throws = Math.max(0, G.log.ai_throws - n); }
+  G.runThrows = Math.max(0, (G.runThrows || 0) - n); G.ammo += n; G.throwLog = [];
+  if (G.player) updateHud();
+  if (!abort) { toast('チュートリアル完了!\n定時退社をめざそう!'); tone(660, 990, 0.2, 'sine', 0.1); }
+}
+$('tutNext').onclick = () => { tutNext(); $('tutNext').blur(); };
+$('tutSkip').onclick = () => { $('tutSkip').blur(); endTutorial(true); };
+
 // ---------------- ストーリー・あそびかた(PC版の「あそびかた」と同じ内容) ----------------
 function introPages() {
   const ctl = G.device === 'touch'
@@ -2698,6 +2959,7 @@ function openRanking() {
   else if (from === 'result') tab = 'season';
   if (from !== 'ranking') rkDay = from === 'result' && G.playMode === 'daily' && G.daily ? G.daily.day : null;   // 結果画面からは、遊んだ日のお題
   setMode('ranking'); setRankTab(tab);
+  if (!TUT.on && store.get('tutDone', false) && !store.get('rankTutSeen', false)) setTimeout(() => { if (G.mode === 'ranking' && !TUT.on) startRankTut(); }, 450);
 }
 // 今期ランキング:半月ごと(1〜15日 / 16日〜月末、日本時間)。第1回は 2026/10/16〜10/31(サーバーと同じ計算)
 const SEASON_BASE = 2026 * 24 + 9 * 2 + 1;
@@ -3102,6 +3364,11 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 9, date: '2026/10/20', title: 'チュートリアルを追加(Web版)', items: [
+    'はじめて遊ぶ人には、1面の最初に操作のチュートリアルが出るようになりました。移動・ジャンプ・AI・課金パワーを実際にやってみながら覚えられます',
+    'AIと課金パワーの残りの数、スコアとライフが画面のどこに出ているかも、光らせて案内します。ランキングを初めて開いたときは、見方を説明します',
+    'もう一度見たいときは、一時停止(Esc / II)の「チュートリアル」から。右上に課金パワーの残りの数もいつも出るようになりました',
+  ] },
   { id: 8, date: '2026/10/14', title: '今期ランキングがスタート!', items: [
     'ランキングに「今期」を追加。半月ごと(1〜15日 / 16日〜月末)にリセットされます。通常モードの点で競います',
     '期が終わったときの1位には、赤い特別な称号「第〇回王者」をプレゼント!(次にログインしたときに届きます)',
