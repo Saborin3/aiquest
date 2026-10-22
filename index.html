@@ -43,7 +43,7 @@ button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
 /* ダブルタップで拡大しない(ボタンや画面は manipulation、ゲームの部分は none) */
 *, *::before, *::after { touch-action: manipulation; }
 canvas, #touch, #touch * { touch-action: none; }
-input { user-select: text; -webkit-user-select: text; }
+input, textarea { user-select: text; -webkit-user-select: text; }
 
 /* ---- 画面(オーバーレイ) ---- */
 .screen {
@@ -95,6 +95,27 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
 
 /* キャラ選択 */
 .sheet { width: min(860px, 100%); margin: auto 0; }
+/* ホーム:まん中はあけて、うしろの3Dでキャラが歩いているのを見せる */
+.screen.home { flex-direction: column; align-items: stretch; justify-content: space-between; gap: 10px;
+  background: linear-gradient(rgba(20,26,44,.88) 0, rgba(20,26,44,.55) 22%, rgba(20,26,44,0) 34%, rgba(20,26,44,0) 62%, rgba(20,26,44,.6) 74%, rgba(20,26,44,.92) 100%); }
+.home-top, .home-actions { width: min(1000px, 100%); margin: 0 auto; }
+.home-top h2 { font-family: var(--font-title); font-weight: 400; font-size: clamp(22px, 4.2vw, 34px); margin: 4px 0 0; color: var(--paper); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.home-name { margin-top: auto; text-align: center; color: var(--paper); font-weight: 800; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+.home-name b { font-size: 20px; color: var(--yellow); margin-right: 6px; }
+.home-actions { justify-content: center; margin-top: 0; }
+.home-actions #startGame { font-size: 19px; padding: 14px 36px; }
+.ss-who { color: var(--paper); font-weight: 800; margin: -6px 0 6px; } .ss-who b { color: var(--yellow); }
+/* ステージの地図(点と道でつないだワールドマップ) */
+.st-map { width: min(100%, calc(40vh * 10 / 3)); margin-left: auto; margin-right: auto; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 3px rgba(246,245,240,.85), 0 8px 18px rgba(0,0,0,.35); margin-bottom: 10px; }
+.st-map svg { display: block; width: 100%; height: auto; }
+.st-map .node { cursor: pointer; }
+.st-map .node.locked { cursor: not-allowed; }
+.st-map .node:not(.locked):hover .dot { filter: brightness(1.12); }
+.st-map .node:focus { outline: none; } .st-map .node:focus-visible .dot { stroke: #ffe600; stroke-width: 6; }
+.st-map .me { animation: stHop .9s ease-in-out infinite; }
+@keyframes stHop { 50% { transform: translateY(-9px); } }
+@media (prefers-reduced-motion: reduce) { .st-map .me { animation: none; } }
+@media (max-height: 460px) { .st-map { width: min(100%, calc(34vh * 10 / 3)); margin-bottom: 4px; } }
 .screen > .panel { margin: auto 0; }
 /* 横向きのスマホなど、高さが低い画面ではつめる */
 @media (max-height: 480px) {
@@ -123,6 +144,24 @@ body.touch .kh { display: none; }
 .btn { border: 0; border-radius: 6px; padding: 12px 20px; font-size: 16px; font-weight: 800; background: var(--paper); color: var(--ink); }
 .btn.primary { background: var(--yellow); }
 .btn.ghost { background: transparent; color: var(--paper); box-shadow: inset 0 0 0 2px rgba(246,245,240,.5); }
+/* 立体ボタン(左上から光が当たって、下に厚みがある見た目。押すと沈む)
+   光と影は ::before の層で重ねる(画面ごとの色の指定 background で消えないように。文字よりうしろ・ボタンの色より前) */
+.btn { --depth: rgba(0,0,0,.42); position: relative; isolation: isolate; transition: transform .08s, box-shadow .08s, filter .15s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -3px 0 rgba(0,0,0,.14), 0 4px 0 var(--depth), 0 6px 10px rgba(0,0,0,.28); }
+.btn::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(130% 100% at 28% 0%, rgba(255,255,255,.6) 0%, rgba(255,255,255,.12) 45%, rgba(255,255,255,0) 60%),
+              linear-gradient(180deg, rgba(255,255,255,.1) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,.14) 100%); }
+.btn.primary { --depth: #a8920f; }
+.btn.ghost { --depth: rgba(0,0,0,.55); background-color: rgba(246,245,240,.1);
+  box-shadow: inset 0 0 0 2px rgba(246,245,240,.55), inset 0 1px 0 rgba(255,255,255,.5), 0 4px 0 var(--depth), 0 6px 10px rgba(0,0,0,.3); }
+.btn.ghost::before { background: radial-gradient(130% 100% at 28% 0%, rgba(255,255,255,.28) 0%, rgba(255,255,255,.05) 45%, rgba(255,255,255,0) 60%),
+                                 linear-gradient(180deg, rgba(255,255,255,.04) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,.22) 100%); }
+.btn:hover:not(:disabled) { filter: brightness(1.05); }
+.btn:active:not(:disabled) { transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.14), 0 1px 0 var(--depth), 0 2px 4px rgba(0,0,0,.25); }
+.btn.ghost:active:not(:disabled) { box-shadow: inset 0 0 0 2px rgba(246,245,240,.55), 0 1px 0 var(--depth), 0 2px 4px rgba(0,0,0,.3); }
+.btn:disabled { box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); } .btn:disabled::before { display: none; }
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 
 /* HUD */
 #hud { position: fixed; z-index: 10; left: 0; right: 0; top: 0; pointer-events: none;
@@ -212,7 +251,9 @@ body.touch .kh { display: none; }
   text-shadow: 0 4px 0 #6b3a00, 0 0 22px rgba(255,200,40,.9); animation: spIn .45s cubic-bezier(.2,1.6,.5,1); }
 @keyframes spIn { from { transform: translateX(-50%) scale(2.4); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #spBanner { animation: none; } #spFlash { transition: none; } }
-.tbtn:active, .tbtn.on { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.28); }
+#touch .tbtn { background-image: radial-gradient(100% 100% at 30% 15%, rgba(255,255,255,.65) 0%, rgba(255,255,255,0) 55%), linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.16) 100%);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.15), 0 4px 0 rgba(0,0,0,.35), 0 6px 10px rgba(0,0,0,.25); }
+.tbtn:active, .tbtn.on { transform: translateY(3px); box-shadow: inset 0 -2px 0 rgba(0,0,0,.15), 0 1px 0 rgba(0,0,0,.35); }
 #bJump { right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); width: calc(70px * var(--s)); height: calc(70px * var(--s)); background: var(--yellow); font-size: calc(13px * var(--s)); }
 #bThrow { right: calc(max(18px, env(safe-area-inset-right, 0px)) + calc(78px * var(--s))); bottom: max(20px, env(safe-area-inset-bottom, 0px)); width: calc(58px * var(--s)); height: calc(58px * var(--s)); background: #fff; font-size: calc(12px * var(--s)); }
 #bThrow b { color: var(--blue); font-family: var(--font-title); font-weight: 400; font-size: calc(15px * var(--s)); }
@@ -292,6 +333,20 @@ body.touch .kh { display: none; }
 .seg { display: inline-flex; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 2px var(--ink); }
 .seg button { border: 0; background: none; padding: 8px 14px; font-weight: 800; font-size: 14px; color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* お問い合わせ */
+.contact { max-width: 640px; }
+.contact .lead { margin: 4px 0 10px; font-size: 14px; color: #444; }
+.contact .seg { flex-wrap: wrap; margin-bottom: 10px; }
+#ctText { width: 100%; box-sizing: border-box; min-height: 130px; resize: vertical; font: inherit; font-size: 16px; line-height: 1.6;
+  padding: 10px 12px; border-radius: 6px; border: 2px solid var(--ink); background: #fff; color: var(--ink); }
+#ctText:focus { outline: 3px solid var(--yellow); outline-offset: 1px; }
+.ct-hint { font-size: 13px; color: #555; margin: 0 0 6px; }
+.ct-count { text-align: right; font-size: 12px; color: #666; }
+.ct-info { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 6px 0; }
+.ct-info input { margin-top: 3px; width: 18px; height: 18px; }
+#ctInfoText { display: block; color: #666; font-size: 12px; word-break: break-all; }
+.contact .msg { min-height: 1.6em; margin: 4px 0; font-weight: 700; } .contact .msg.bad { color: var(--vermilion); } .contact .msg.good { color: var(--green); }
 
 /* やりこみ要素 */
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
@@ -390,7 +445,7 @@ body.touch .kh { display: none; }
       <button class="punch" id="goPC">PCで出勤する<small>キーボードとマウスで遊ぶ</small><span class="stamp">出勤</span></button>
       <button class="punch" id="goTouch">スマホ・タブレットで出勤する<small>画面のスティックとボタンで遊ぶ</small><span class="stamp">出勤</span></button>
     </div>
-    <div class="tc-foot"><span id="bestLine">自己ベスト:まだ記録なし</span><span><button id="openRankTitle">ランキング</button><button id="openHelpTitle">あそびかた</button></span></div>
+    <div class="tc-foot"><span id="bestLine">自己ベスト:まだ記録なし</span><span><button id="openRankTitle">ランキング</button><button id="openHelpTitle">あそびかた</button><button id="openContactTitle">お問い合わせ</button></span></div>
   </div>
 </section>
 
@@ -416,11 +471,43 @@ body.touch .kh { display: none; }
   </div>
 </section>
 
-<section id="charsel" class="screen dim hidden" aria-label="キャラクター選択">
-  <div class="sheet">
+<!-- ホーム(ログインしたあと最初の画面):今のキャラが歩いている。ここから出勤・着せ替え・ランキングなどへ -->
+<section id="charsel" class="screen home hidden" aria-label="ホーム">
+  <div class="home-top">
     <div class="cs-info" id="csInfo"></div>
+    <h2>今日も定時退社をめざそう</h2>
+  </div>
+  <div class="home-name" id="homeName"></div>
+  <div class="sheet-actions home-actions">
+    <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
+    <button class="btn ghost" id="csLocker">ガシャ・称号<span class="kh"> [G]</span></button>
+    <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
+    <button class="btn ghost" id="csNews">お知らせ<span id="csNewsNew" class="news-new hidden">NEW</span><span class="kh"> [I]</span></button>
+    <button class="btn ghost" id="csContact">お問い合わせ<span class="kh"> [Q]</span></button>
+    <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
+    <button class="btn ghost" id="csChars">着せ替え・キャラ選択<span class="kh"> [C]</span></button>
+    <button class="btn primary" id="startGame">出勤する<span class="kh"> [Enter]</span></button>
+  </div>
+</section>
+
+<!-- 着せ替え・キャラ選択 -->
+<section id="chars" class="screen dim hidden" aria-label="着せ替え・キャラ選択">
+  <div class="sheet">
     <h2>今日は誰で出勤する?</h2>
     <div class="cards" id="cards"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="chDress">着せ替え<span class="kh"> [K]</span></button>
+      <button class="btn primary" id="chDone">決定<span class="kh"> [Enter]</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ステージ選択(「出勤する」を押したあと) -->
+<section id="stagesel" class="screen dim hidden" aria-label="ステージ選択">
+  <div class="sheet">
+    <h2>どこから出勤する?</h2>
+    <p class="ss-who" id="ssWho"></p>
+    <div class="st-map" id="stMap" aria-label="ステージの地図"></div>
     <div class="cs-row">
     <div class="cs-mode hidden" id="csYearRow">年<span class="kh"> [Y]</span>
       <span class="seg" id="csYear" role="group" aria-label="年"><button data-y="1">1年目</button><button data-y="2">2年目</button></span></div>
@@ -430,12 +517,8 @@ body.touch .kh { display: none; }
     </div>
     <p id="csModeNote" class="hidden"></p>
     <div class="sheet-actions">
-      <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
-      <button class="btn ghost" id="csLocker">ガシャ・称号<span class="kh"> [G]</span></button>
-      <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
-      <button class="btn ghost" id="csNews">お知らせ<span id="csNewsNew" class="news-new hidden">NEW</span><span class="kh"> [I]</span></button>
-      <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
-      <button class="btn primary" id="startGame">この人で出勤する</button>
+      <button class="btn ghost" id="ssBack">もどる<span class="kh"> [Esc]</span></button>
+      <button class="btn primary" id="ssGo">出勤する!<span class="kh"> [Enter]</span></button>
     </div>
   </div>
 </section>
@@ -510,8 +593,9 @@ body.touch .kh { display: none; }
     <div class="row">
       <button class="btn primary" id="resume">つづける</button>
       <button class="btn" id="retry">この面をやり直す</button>
-      <button class="btn" id="toMenu">キャラ選択へ</button>
+      <button class="btn" id="toMenu">ホームへ</button>
       <button class="btn" id="tutAgain">チュートリアル</button>
+      <button class="btn" id="pzContact">お問い合わせ</button>
     </div>
   </div>
 </section>
@@ -525,7 +609,7 @@ body.touch .kh { display: none; }
     <div id="rRank" class="rank-box hidden"></div>
     <div class="row">
       <button class="btn primary" id="rNext">次へ</button>
-      <button class="btn" id="rMenu">キャラ選択へ</button>
+      <button class="btn" id="rMenu">ホームへ</button>
     </div>
   </div>
 </section>
@@ -562,6 +646,22 @@ body.touch .kh { display: none; }
     <h2>お知らせ</h2>
     <div class="news-body" id="newsBody"></div>
     <div class="row"><button class="btn primary" id="closeNews">もどる<span class="kh"> [Enter]</span></button></div>
+  </div>
+</section>
+
+<!-- お問い合わせ(バグ報告・改善してほしいこと・感想) -->
+<section id="contact" class="screen dim hidden" aria-label="お問い合わせ">
+  <div class="panel contact">
+    <h2>お問い合わせ</h2>
+    <p class="lead">バグの報告や「ここをこうしてほしい」、感想など、なんでも送ってね。作った人が読んで、ゲームをよくするのに使います。</p>
+    <div class="seg" id="ctKind" role="group" aria-label="種類"><button data-k="bug">バグ・不具合</button><button data-k="idea">改善してほしい</button><button data-k="other">感想・その他</button></div>
+    <p class="ct-hint" id="ctHint"></p>
+    <textarea id="ctText" maxlength="1000" aria-labelledby="ctHint"></textarea>
+    <div class="ct-count"><span id="ctCount">0</span> / 1000</div>
+    <label class="ct-info"><input type="checkbox" id="ctInfo" checked><span>ゲームの情報もいっしょに送る(調べるのに役立ちます)<span id="ctInfoText"></span></span></label>
+    <p class="ct-hint">※名前・メールアドレス・学校名など、個人がわかることは書かないでね。返事はお知らせやアップデートでするよ。</p>
+    <p class="msg" id="ctMsg"></p>
+    <div class="row"><button class="btn primary" id="ctSend">送る</button><button class="btn" id="ctBack">もどる<span class="kh"> [Esc]</span></button></div>
   </div>
 </section>
 
@@ -1907,6 +2007,7 @@ function keyOf(e) {
   return e.key && e.key.length === 1 ? e.key.toLowerCase() : e.key;
 }
 window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'TEXTAREA') { if (e.key === 'Escape') closeContact(); return; }   // お問い合わせの入力中
   if (e.target && e.target.tagName === 'INPUT') {          // 名前などの入力中はゲームの操作にしない
     if (e.key === 'Enter' && !e.isComposing) e.target.dispatchEvent(new Event('enterkey'));
     if (e.key === 'Escape' && G.mode === 'login') guestLogin();
@@ -1946,24 +2047,36 @@ window.addEventListener('keydown', e => {
     if (k === 'ArrowRight' || k === 'd' || k === 'Enter' || k === ' ') { e.preventDefault(); turnIntro(1); }
     if (k === 'ArrowLeft' || k === 'a') turnIntro(-1);
     if (k === 'Escape') closeIntro();
-  } else if (G.mode === 'charsel') {
+  } else if (G.mode === 'charsel') {   // ホーム
     if (k === 'l') openRanking();
     if (k === 'g') openLocker();
     if (k === 'i') openNews();
-    if (k === 'm') { const ms = modesForYear(G.selYear); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
-    if (k === 'y' && yearOpen(2)) setSelYear(G.selYear === 2 ? 1 : 2);
+    if (k === 'q') openContact();
     if (k === 'h') openIntro(() => openCharsel());
+    if (k === 'c') openChars();
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
-    if (k === 'ArrowUp' || k === 'w') { e.preventDefault(); const [c, mx] = selStage(); if (c < mx) moveStage(1); }
-    if (k === 'ArrowDown' || k === 's') { e.preventDefault(); if (selStage()[0] > 0) moveStage(-1); }
     if (k === 'n') openLogin(true);
-    if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); openStageSel(); }
     if (k === 'Escape') openLogin(true);
+  } else if (G.mode === 'chars') {     // 着せ替え・キャラ選択
+    if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
+    if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
+    if (k === 'k') openLocker('items', 'chars');
+    if (k === 'Enter' || k === ' ' || k === 'Escape') { e.preventDefault(); openCharsel(); }
+  } else if (G.mode === 'stagesel') {  // ステージ選択
+    if (k === 'm') { const ms = modesForYear(G.selYear); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
+    if (k === 'y' && yearOpen(2)) setSelYear(G.selYear === 2 ? 1 : 2);
+    if (k === 'ArrowRight' || k === 'd' || k === 'ArrowUp' || k === 'w') { e.preventDefault(); const [c, mx] = selStage(); if (c < mx) moveStage(1); }
+    if (k === 'ArrowLeft' || k === 'a' || k === 'ArrowDown' || k === 's') { e.preventDefault(); if (selStage()[0] > 0) moveStage(-1); }
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
+    if (k === 'Escape') openCharsel();
+  } else if (G.mode === 'contact') {
+    if (k === 'Escape') closeContact();
   } else if (G.mode === 'news') {
     if (k === 'Escape' || k === 'Enter' || k === 'i') { e.preventDefault(); openCharsel(); }
   } else if (G.mode === 'locker') {
-    if (k === 'Escape') openCharsel();
+    if (k === 'Escape') $('lkClose').onclick();
     if (k === 'ArrowLeft' || k === 'ArrowRight') { lkTab = lkTab === 'titles' ? 'items' : 'titles'; renderLocker(); }
   } else if (G.mode === 'result') {
     if (k === 'Enter' || k === ' ') { e.preventDefault(); resultNext && resultNext(); }
@@ -2103,8 +2216,9 @@ function loop(t) {
   else if (G.mode === 'ending' && END) updateEnding(dt);
   else if (G.mode === 'result' && G.fx.length) updateFx(dt);
   if (G.mode === 'locker') updateLocker(dt);
+  else if (G.mode === 'charsel') updateHome(dt);
   else if (lkHero) closeLockerPreview();
-  if (G.player && G.mode !== 'ending' && G.mode !== 'locker') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
+  if (G.player && G.mode !== 'ending' && G.mode !== 'locker' && G.mode !== 'charsel') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
   if (TUT.on) placeTut();
   } catch (err) { if (!loop.warned) { loop.warned = true; console.error(err); } }   // 1回のエラーでゲーム全体が止まらないように
   renderer.render(scene, camera);
@@ -2120,6 +2234,8 @@ function setMode(m) {
   if (m === 'play' && document.activeElement && document.activeElement.blur) document.activeElement.blur();   // スペースでボタンが押されないように
   $('title').classList.toggle('hidden', m !== 'title');
   $('charsel').classList.toggle('hidden', m !== 'charsel');
+  $('chars').classList.toggle('hidden', m !== 'chars');
+  $('stagesel').classList.toggle('hidden', m !== 'stagesel');
   $('login').classList.toggle('hidden', m !== 'login');
   $('gacha').classList.toggle('hidden', m !== 'gacha');
   $('pause').classList.toggle('hidden', m !== 'pause');
@@ -2128,6 +2244,7 @@ function setMode(m) {
   $('intro').classList.toggle('hidden', m !== 'intro');
   $('locker').classList.toggle('hidden', m !== 'locker');
   $('news').classList.toggle('hidden', m !== 'news');
+  $('contact').classList.toggle('hidden', m !== 'contact');
   const inGame = ['play', 'pause', 'result'].includes(m);
   $('hud').classList.toggle('hidden', !inGame);
   $('touch').classList.toggle('hidden', !(m === 'play' && G.device === 'touch'));
@@ -2198,7 +2315,7 @@ function openCharsel() {
       <div><span>AIを続けて投げられる数</span><span>${c.shots}個</span></div>
       <div><span>スコア倍率</span><span class="mult">×${c.score}</span></div></div>`;
     b.onclick = () => { setPicked(i); b.blur(); };
-    b.ondblclick = () => { picked = i; startRun(CHARS[picked]); };
+    b.ondblclick = () => { setPicked(i, true); openCharsel(); };
     wrap.appendChild(b);
   });
   try { refreshNewsBadge(); } catch (e) { /* 読みこみ途中 */ }
@@ -2219,7 +2336,7 @@ function fitStageName() {
   for (const [y2, n] of [[false, STAGES.length], [true, STAGES2.length]]) for (let i = 0; i < n; i++) { m.textContent = stageLabel(y2, i); w = Math.max(w, m.getBoundingClientRect().width); }
   m.remove(); el.style.width = `${Math.ceil(w) + 2}px`; stNameFit = key;
 }
-addEventListener('resize', () => { stNameFit = ''; fitStageName(); });
+addEventListener('resize', () => { stNameFit = ''; fitStageName(); if (G.mode === 'stagesel') renderStageMap(); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stNameFit = ''; fitStageName(); });
 function refreshCharsel() {
   const sv = G.save, who = G.acct ? G.acct.name : 'ゲスト';
@@ -2243,7 +2360,76 @@ function refreshCharsel() {
   G.startStage2 = Math.max(0, Math.min(G.startStage2 || 0, (sv.unlocked2 || 1) - 1));
   const [cur, max] = selStage();
   $('stName').textContent = stageLabel(y2, cur); fitStageName();
+  renderStageMap();
   $('stPrev').disabled = cur <= 0; $('stNext').disabled = cur >= max;
+}
+// ---- ステージの地図:ステージを点と道でつなぐ。選んでいるステージに今のキャラが立つ ----
+const MAP_PTS = { 1: [[90, 205], [270, 120], [460, 200], [650, 115], [870, 175]], 2: [[90, 120], [275, 200], [470, 115], [665, 195], [880, 125]] };
+function stageMapState() {
+  const play = selPlay(), y2 = play === 'year2' || play === 'year2ot', st = y2 ? STAGES2 : STAGES;
+  const max = y2 ? (G.save.unlocked2 || 1) - 1 : G.save.unlocked - 1;
+  // 選べるのは通常(1年目)と2年目(通常)だけ。残業・お題はスタートが決まっている
+  const pick = play === 'normal' || play === 'year2';
+  const cur = play === 'normal' ? G.startStage : play === 'year2' ? (G.startStage2 || 0) : play === 'daily' ? (dailyOf().stage || 0) : 0;
+  return { y2, st, max: pick ? max : -1, cur, pick, off: y2 ? STAGES.length : 0 };
+}
+function renderStageMap() {
+  const el = $('stMap'); if (!el) return;
+  const { y2, st, max, cur, pick, off } = stageMapState(), P = MAP_PTS[y2 ? 2 : 1].slice(0, st.length);
+  // 小さく表示されるとき(スマホ)は、字を大きくして、名前は選んでいるステージだけ出す
+  const k = (el.clientWidth || 1000) / 1000, small = k < 0.62, fs = small ? Math.min(34, 12 / k) : 17, zoom = small ? 1.35 : 1;
+  const ok = i => pick ? i <= max : i === cur;
+  const sky = y2 ? ['#ff9a6b', '#7a4fa3'] : ['#9fd8ff', '#5ab4f2'], ground = y2 ? '#4f6f5a' : '#8fd17c', ground2 = y2 ? '#3f5c49' : '#74bd62';
+  const daily = selPlay() === 'daily', who = daily ? CHARS[dailyOf().char] : CHARS[picked], ch = who.look;   // お題はキャラが決まっている
+  $('ssWho').innerHTML = `今日のキャラ:<b>${who.name}</b>(スコア ×${who.score})${daily ? '(今日のお題で固定)' : ''}`;
+  let svg = `<svg viewBox="0 0 1000 300" role="group" aria-label="${y2 ? '2年目' : '1年目'}のステージ"><defs>
+    <linearGradient id="mSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[1]}"/><stop offset="1" stop-color="${sky[0]}"/></linearGradient></defs>
+    <rect width="1000" height="300" fill="url(#mSky)"/>`;
+  // 背景:太陽(夕日)・雲・遠くのビル
+  svg += y2 ? '<circle cx="860" cy="70" r="34" fill="#ffd36b" opacity=".9"/>' : '<circle cx="900" cy="52" r="26" fill="#fff6a8"/>';
+  for (const [x, y, w] of [[140, 48, 1], [520, 34, 1.3], [760, 70, .9]]) svg += `<g fill="#fff" opacity="${y2 ? .45 : .9}" transform="translate(${x} ${y}) scale(${w})"><ellipse cx="0" cy="0" rx="34" ry="13"/><ellipse cx="22" cy="-8" rx="22" ry="14"/><ellipse cx="-20" cy="-4" rx="18" ry="11"/></g>`;
+  const bld = [[30, 60], [80, 95], [150, 70], [330, 85], [380, 55], [560, 90], [610, 65], [720, 80], [800, 100], [950, 70]];
+  for (const [x, h] of bld) {
+    svg += `<rect x="${x}" y="${120 - h}" width="38" height="${h}" fill="${y2 ? '#3a3157' : '#bcd6ea'}"/>`;
+    for (let wy = 128 - h; wy < 112; wy += 14) svg += `<rect x="${x + 7}" y="${wy}" width="7" height="6" fill="${y2 ? '#ffd36b' : '#e8f3fb'}" opacity="${y2 ? .8 : 1}"/><rect x="${x + 22}" y="${wy}" width="7" height="6" fill="${y2 ? '#ffd36b' : '#e8f3fb'}" opacity="${y2 ? .5 : 1}"/>`;
+  }
+  svg += `<path d="M0 118 Q250 98 500 116 T1000 112 V300 H0 Z" fill="${ground}"/><path d="M0 250 Q300 230 600 252 T1000 245 V300 H0 Z" fill="${ground2}"/>`;
+  for (const [x, y] of [[180, 255], [360, 150], [560, 262], [760, 245], [960, 230], [40, 165]]) svg += `<g transform="translate(${x} ${y})"><rect x="-3" y="0" width="6" height="14" fill="#7a5230"/><circle cx="0" cy="-6" r="13" fill="${y2 ? '#2f4f3a' : '#3f9a4a'}"/></g>`;
+  // 道:行けるところまでは黄色、その先は点線
+  for (let i = 0; i < P.length - 1; i++) {
+    const [x1, y1] = P[i], [x2, y2_] = P[i + 1], mx = (x1 + x2) / 2, my = Math.min(y1, y2_) - 30;
+    const d = `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2_}`, open = pick ? i + 1 <= max : false;
+    svg += `<path d="${d}" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="16" stroke-linecap="round"/>`;
+    svg += open ? `<path d="${d}" fill="none" stroke="#f3e2a0" stroke-width="11" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#c9a84a" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round"/>`
+                : `<path d="${d}" fill="none" stroke="#e9ecef" stroke-width="7" stroke-dasharray="3 13" stroke-linecap="round" opacity=".85"/>`;
+  }
+  // ステージの点
+  P.forEach(([x, y], i) => {
+    const can = ok(i), sel = i === cur, done = pick && i < max;
+    const fill = sel ? '#ffe600' : can ? (done ? '#e8473a' : '#ff8a3d') : '#9aa3ad';
+    svg += `<g class="node${can ? '' : ' locked'}" data-i="${i}" tabindex="${can && pick ? 0 : -1}" role="button" aria-label="ステージ${i + 1 + off} ${escapeHtml(st[i].name)}${can ? '' : '(まだ行けない)'}">
+      <ellipse cx="${x}" cy="${y + 12}" rx="30" ry="9" fill="rgba(0,0,0,.25)"/>
+      <circle class="dot" cx="${x}" cy="${y}" r="${(sel ? 27 : 23) * zoom}" fill="${fill}" stroke="#fff" stroke-width="5"/>
+      <text x="${x}" y="${y + 8 * zoom}" text-anchor="middle" font-size="${(sel ? 24 : 21) * zoom}" font-weight="900" fill="${sel ? '#1d2433' : '#fff'}">${can || !pick ? i + 1 + off : '🔒'}</text>
+      ${!small || sel ? `<text x="${Math.max(fs * 3, Math.min(1000 - fs * 3, x))}" y="${y + 34 * zoom + fs}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" stroke="rgba(0,0,0,.6)" stroke-width="${fs / 4}" paint-order="stroke">${escapeHtml(st[i].name)}</text>` : ''}</g>`;
+  });
+  // 選んでいるステージに、今のキャラ(スーツの色)
+  const [cx, cy] = P[Math.max(0, Math.min(P.length - 1, cur))];
+  svg += `<g transform="translate(${cx} ${cy - 30 * zoom}) scale(${zoom})"><g class="me">
+    <rect x="-11" y="-30" width="22" height="26" rx="3" fill="${ch.suit}" stroke="#1d2433" stroke-width="2"/>
+    ${ch.tie ? `<rect x="-2" y="-28" width="4" height="13" fill="${ch.tie}"/>` : ''}
+    <rect x="-10" y="-52" width="20" height="21" rx="3" fill="#f4c9a0" stroke="#1d2433" stroke-width="2"/>
+    ${ch.style === 'bald' ? '' : `<rect x="-11" y="-55" width="22" height="${ch.style === 'long' ? 11 : 8}" rx="3" fill="${ch.hair}"/>`}
+    <rect x="-5" y="-44" width="3" height="4" fill="#1d2433"/><rect x="3" y="-44" width="3" height="4" fill="#1d2433"/>
+    <rect x="-9" y="-5" width="7" height="8" fill="#1d2433"/><rect x="2" y="-5" width="7" height="8" fill="#1d2433"/></g></g>`;
+  el.innerHTML = svg + '</svg>';
+  el.querySelectorAll('.node').forEach(g => {
+    const i = Number(g.dataset.i);
+    const go = () => { if (!pick || i > max) { if (pick) toast('まだ行けないステージだよ', true); return; }
+      if (selPlay() === 'year2') G.startStage2 = i; else G.startStage = i; refreshCharsel(); tone(900, 900, 0.04, 'sine', 0.08); };
+    g.addEventListener('click', go);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); go(); } });
+  });
 }
 function selStage() { return selPlay() === 'year2' ? [G.startStage2 || 0, (G.save.unlocked2 || 1) - 1] : [G.startStage, G.save.unlocked - 1]; }   // [今のスタート, 選べる最後]
 function moveStage(d) {
@@ -2259,8 +2445,23 @@ function setPicked(i, quiet) {
   picked = (i + CHARS.length) % CHARS.length;
   if (changed) say(CHARS[picked].name, 'select');
   [...$('cards').children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === picked)));
+  refreshHomeName();
 }
-$('startGame').onclick = () => startRun(CHARS[picked]);
+$('startGame').onclick = () => openStageSel();
+$('ssGo').onclick = () => startRun(CHARS[picked]);
+$('ssBack').onclick = () => openCharsel();
+$('csChars').onclick = () => openChars();
+$('chDone').onclick = () => openCharsel();
+$('chDress').onclick = () => openLocker('items', 'chars');
+// 「出勤する」→ ステージ選択 / 「着せ替え・キャラ選択」→ キャラのカード
+function openStageSel() {
+  const c = CHARS[picked];
+  $('ssWho').innerHTML = `今日のキャラ:<b>${c.name}</b>(スコア ×${c.score})`;
+  setMode('stagesel'); refreshCharsel(); stNameFit = ''; fitStageName();
+  setTimeout(() => $('ssGo').focus(), 60);
+}
+function openChars() { setPicked(picked, true); setMode('chars'); }
+function refreshHomeName() { const c = CHARS[picked]; $('homeName').innerHTML = `<b>${c.name}</b>${c.role}(スコア ×${c.score})`; }
 
 
 // 一時停止・あそびかた
@@ -2347,7 +2548,7 @@ function showResult(kind) {
     saveBest();
     $('rTitle').textContent = G.playMode === 'overtime' ? '残業、完遂!' : '定時退社、達成!';
     $('rBody').textContent = `${G.playMode === 'overtime' ? '残業モード ' : ''}全5ステージ クリア! スコアは ${G.score}点(${G.char.name})。` +
-      (G.playMode === 'normal' ? '\nキャラ選択で「残業」モードが遊べるようになったよ。' : '') +
+      (G.playMode === 'normal' ? '\n「出勤する」で「残業」モードが遊べるようになったよ。' : '') +
       (VOICE.credit ? `\n${VOICE.credit}` : '');
     $('rNext').textContent = 'もう一度遊ぶ'; resultNext = () => startRun(G.char, G.playMode);
   } else if (kind === 'daily') {
@@ -2722,7 +2923,7 @@ function spinGacha() {
     gachaBusy = false; refreshGacha(); updateHud();
   }, 950);
 }
-function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return openLocker(); buildStage(G.stage + 1); setMode('play'); }
+function gachaNext() { if (gachaBusy) return; if (gachaFrom === 'menu') return openLocker(undefined, lkFrom); buildStage(G.stage + 1); setMode('play'); }
 $('gcSpin').onclick = spinGacha;
 $('gcNext').onclick = gachaNext;
 
@@ -2924,8 +3125,8 @@ function introPages() {
     : '<ul><li>W A S D … 移動(A・Dは横歩き)</li><li>← → … 向きを変える   ↑ ↓ … 視点を上下</li><li>Shift … ダッシュ(Wで走り続けても加速)</li><li>スペース … ジャンプ(短く押すと小ジャンプ。ダッシュ中は高く遠くまで)</li>' +
       '<li>F / クリック … AIを投げる</li><li>E … 必殺技「課金パワー」</li><li>H / Esc … 一時停止・あそびかた</li><li>R … この面をやり直す</li></ul>';
   const screens = G.device === 'touch'
-    ? '<ul><li>【キャラ選択】キャラをタップ、◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
-    : '<ul><li>【キャラ選択】← → キャラ、↑ ↓ スタートするステージ、Enter 決定</li><li>    M モード、L ランキング、G ガシャ・称号、I お知らせ、H あそびかた</li>' +
+    ? '<ul><li>【ホーム】「出勤する」でステージ選択、「着せ替え・キャラ選択」でキャラを選ぶ</li><li>【ステージ選択】◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
+    : '<ul><li>【ホーム】Enter 出勤する(ステージ選択へ)、C 着せ替え・キャラ選択、← → キャラ</li><li>    L ランキング、G ガシャ・称号、I お知らせ、Q お問い合わせ、H あそびかた</li><li>【ステージ選択】← → スタートするステージ、M モード、Enter 出勤!、Esc もどる</li>' +
       '<li>【ガシャ】スペース 回す(100どる)、Enter 次へ</li><li>【エンディング】Enter でとばす</li></ul>';
   const chars = CHARS.slice().sort((a, b) => a.score - b.score).map(c =>
     `<div class="ch"><b>${c.name}</b>(スコア <span class="mult">×${c.score}</span>)… ${c.role}<br>${c.desc}</div>`).join('');
@@ -2943,9 +3144,9 @@ function introPages() {
       '<li><b>社員証</b>:各ステージに3枚かくれている(1枚500点)</li><li>クリアすると<b>ボーナス</b>:定時(速いほど・最大2000)/ノーミス 1000/AI節約(投げないほど・最大1000)/全員たおした 500</li>' +
       '<li>キャラのスコア倍率(新人×1.5など)は全部にかかる</li></ul><p>速さ・全部回る・AIを使わない、ぜんぶ同時には取れない。どれをねらう?</p>'],
     ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬く、ボスは足場の上をどこまでも追いかけてくる。そのかわりスコアとどるが×1.5。ランキングも別</li>' +
-      (isTester() ? '<li><b>2年目編</b>(テスト中):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。キャラ選択の「年」で選ぶ。2年目にも残業モードがある。ランキングも別</li>' : '') +
+      (isTester() ? '<li><b>2年目編</b>(テスト中):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。「出勤する」の画面の「年」で選ぶ。2年目にも残業モードがある。ランキングも別</li>' : '') +
       '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li><li><b>今期ランキング</b>:半月ごとにリセット。1位には赤い称号「第〇回王者」</li>' +
-      '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。キャラ選択の「ガシャ・称号」でつけかえ</li></ul>'],
+      '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。ホームの「着せ替え・キャラ選択」でつけかえ</li></ul>'],
     ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
   ];
 }
@@ -3320,7 +3521,8 @@ function dressHero(root, look, equip) {
 
 // ---- ロッカー(称号・着せ替え・ガシャ) ----
 let lkTab = 'titles';
-function openLocker(tab) { if (tab) lkTab = tab; renderLocker(); setMode('locker'); }
+let lkFrom = 'charsel';
+function openLocker(tab, from) { if (tab) lkTab = tab; lkFrom = from || 'charsel'; renderLocker(); setMode('locker'); }
 // ロッカーの3Dプレビュー(ステージから離れた所に、今の見た目のキャラを立たせて、くるくる回す)
 const LK_POS = new THREE.Vector3(500, 0, 500);
 let lkHero = null, lkFloor = null, lkT = 0, lkLight = null;
@@ -3341,7 +3543,8 @@ function lockerPreview() {
   lkLight.visible = true;
 }
 function updateLocker(dt) {
-  if (!lkHero) lockerPreview();
+  lockerPreview();   // キャラ・着せ替えが変わったときだけ作り直す
+  lkHero.position.copy(LK_POS); lkFloor.scale.set(1, 1, 1);
   lkT += dt; lkHero.rotation.y = Math.sin(lkT * 0.9) * 0.9;
   poseHero(lkHero, false, true, dt);
   // 広い画面では、表の右にあいている場所のまん中にキャラが来るように、カメラを横にずらす
@@ -3354,6 +3557,24 @@ function updateLocker(dt) {
   }
   camera.position.set(LK_POS.x + side, 1.7, LK_POS.z + 6.2);
   camera.lookAt(LK_POS.x + side, 1.15, LK_POS.z);
+}
+// ホーム:ロッカーと同じ場所で、今のキャラ(今の着せ替え)が台の上をぐるっと歩く
+let homeT = 0;
+function updateHome(dt) {
+  lockerPreview();
+  homeT += dt;
+  const a = homeT * 0.5, r = 1.7;
+  lkHero.position.set(LK_POS.x + Math.sin(a) * r, 0, LK_POS.z + Math.cos(a) * r * 0.45);
+  lkHero.rotation.y = Math.atan2(Math.cos(a) * r, -Math.sin(a) * r * 0.45);   // 進む向きを向く
+  poseHero(lkHero, true, true, dt * 0.55);
+  lkFloor.scale.set(1.75, 1, 1.25);
+  // 上の文字と下の名前のあいだ(あいている所)に、台とキャラがちょうど入るようにカメラを合わせる
+  const top = $('charsel').querySelector('.home-top').getBoundingClientRect().bottom, bot = $('homeName').getBoundingClientRect().top;
+  const H = innerHeight, free = Math.max(60, bot - top), c = (top + bot) / 2 / H, t = Math.tan(camera.fov * Math.PI / 360);
+  const dist = Math.max(4.4 / (free / H) / (2 * t), 7.2 / (2 * t * camera.aspect), 6);   // 高さ 4.4・幅 7.2 くらいが見えるように
+  const visH = 2 * t * dist, lookY = 1.0 + (c - 0.5) * visH;
+  camera.position.set(LK_POS.x, lookY + dist * 0.22, LK_POS.z + dist);
+  camera.lookAt(LK_POS.x, lookY, LK_POS.z);
 }
 function closeLockerPreview() { if (lkHero) { scene.remove(lkHero); disposeObj(lkHero); lkHero = null; }
   if (G.player) placeCamera(1);   // カメラはすぐ元の場所へ(ステージの上を飛んでいかないように)
@@ -3386,13 +3607,21 @@ function renderLocker() {
 $('lkTabT').onclick = () => { lkTab = 'titles'; renderLocker(); };
 $('lkTabI').onclick = () => { lkTab = 'items'; renderLocker(); };
 $('lkGacha').onclick = () => openGacha('社内ガシャ', 'menu');
-$('lkClose').onclick = () => openCharsel();
+$('lkClose').onclick = () => (lkFrom === 'chars' ? openChars() : openCharsel());
 $('csLocker').onclick = () => openLocker();
 
 // ---------------- お知らせ(アップデート情報) ----------------
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 11, date: '2026/10/22', title: 'ホーム画面ができました', items: [
+    'ログインしたあとの画面が「ホーム」になりました。今のキャラが、今の着せ替えで歩いています',
+    '「出勤する」を押すと、年・モード・スタートするステージを選ぶ画面に。キャラは「着せ替え・キャラ選択」で変えられます',
+  ] },
+  { id: 10, date: '2026/10/22', title: '「お問い合わせ」ができました', items: [
+    'バグの報告や「ここをこうしてほしい」、感想を、ゲームの中から送れるようになりました。ホームの「お問い合わせ [Q]」、一時停止、タイトル画面から開けます',
+    'いただいた内容は作った人が読んで、ゲームをよくするのに使います。PC版(exe)からは、ボタンを押すとブラウザで開きます',
+  ] },
   { id: 9, date: '2026/10/20', title: 'チュートリアルを追加(Web版)', items: [
     'はじめて遊ぶ人には、1面の最初に操作のチュートリアルが出るようになりました。移動・ジャンプ・AI・課金パワーを実際にやってみながら覚えられます',
     'AIと課金パワーの残りの数、スコアとライフが画面のどこに出ているかも、光らせて案内します。ランキングを初めて開いたときは、見方を説明します',
@@ -3441,6 +3670,74 @@ const NEWS = [
 ];
 function newsUnread() { return NEWS.length && NEWS[0].id > (Number(store.get('newsSeen', 0)) || 0); }
 function refreshNewsBadge() { $('csNewsNew').classList.toggle('hidden', !newsUnread()); }
+// ================= お問い合わせ(バグ報告・改善してほしいこと・感想) =================
+// サーバーのシート「contact」に届く。exe版からは ?contact=pc を付けてこのページを開く
+const CT_HINT = { bug: 'どこで・何をしたら・どうなったかを書いてね(例:ステージ3でボスを倒したのに、ドアが開かなかった)',
+                  idea: 'どこを・どうしてほしいかを書いてね(例:ステージ1がむずかしいので、敵を少なくしてほしい)',
+                  other: '感想・応援・遊んでみて思ったこと、なんでもどうぞ' };
+let ctKind = 'bug', ctFrom = 'title', ctWhere = '', ctPlatform = '';
+const recentErrors = [];
+addEventListener('error', e => { recentErrors.push(String(e.message || e).slice(0, 80)); if (recentErrors.length > 3) recentErrors.shift(); });
+function ctInfo() {   // いっしょに送るゲームの情報(画面にも見せる)
+  const ua = navigator.userAgent, os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : 'その他';
+  const br = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'その他';
+  return `${os} / ${br} / 画面 ${innerWidth}x${innerHeight}` + (recentErrors.length ? ` / エラー: ${recentErrors.join(' | ')}` : '');
+}
+function openContact(from) {
+  ctFrom = from || G.mode;
+  // どこで(遊んでいる途中なら、ステージとモード)
+  const inRun = G.player && (ctFrom === 'pause' || ctFrom === 'result') && G.char;
+  ctWhere = inRun ? `${G.playMode} STAGE ${stageNo()} ${curStages()[G.stage].name} (${G.char.name})` : ({ title: 'タイトル', charsel: 'ホーム' }[ctFrom] || ctFrom);
+  ctPlatform = ctPlatform || (G.device === 'touch' ? 'Web/スマホ' : 'Web/PC');
+  const d = store.get('contactDraft', null);
+  if (d && typeof d.text === 'string' && !$('ctText').value) { $('ctText').value = d.text; ctKind = CT_HINT[d.kind] ? d.kind : ctKind; }
+  setCtKind(ctKind); ctCount();
+  $('ctInfoText').textContent = `どこで:${ctWhere} / ${ctPlatform} / ${ctInfo()}`;
+  $('ctMsg').textContent = ''; $('ctMsg').className = 'msg'; $('ctSend').disabled = false;
+  setMode('contact');
+  setTimeout(() => $('ctText').focus(), 60);
+}
+function closeContact() {
+  $('ctText').blur();
+  if (ctFrom === 'pause') return setMode('pause');
+  if (ctFrom === 'charsel') return openCharsel();
+  if (ctFrom === 'result') return setMode('result');
+  setMode('title'); refreshTitle();
+}
+function setCtKind(k) {
+  ctKind = k;
+  document.querySelectorAll('#ctKind [data-k]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
+  $('ctHint').textContent = CT_HINT[k]; $('ctText').placeholder = CT_HINT[k];
+  saveCtDraft();
+}
+function ctCount() { $('ctCount').textContent = $('ctText').value.length; }
+function saveCtDraft() { store.set('contactDraft', { kind: ctKind, text: $('ctText').value }); }   // 書きかけを覚えておく(この端末だけ)
+async function sendContact() {
+  const text = $('ctText').value.trim(), msg = $('ctMsg');
+  if (text.length < 2) { msg.textContent = '内容を書いてね'; msg.className = 'msg bad'; $('ctText').focus(); return; }
+  const body = { action: 'contact', kind: ctKind, text, platform: ctPlatform };
+  if ($('ctInfo').checked) { body.where = ctWhere; body.info = ctInfo(); }
+  if (G.acct) { body.name = G.acct.name; body.token = G.acct.token; }
+  $('ctSend').disabled = true; msg.textContent = '送信中…'; msg.className = 'msg';
+  try {
+    const res = await gasPost(body);
+    if (!res.ok) { msg.textContent = errText(res.error); msg.className = 'msg bad'; return; }
+    $('ctText').value = ''; ctCount(); store.set('contactDraft', null);
+    msg.textContent = '送ったよ!ありがとう 🙏 ちゃんと読みます'; msg.className = 'msg good'; sfx.power && sfx.power();
+  } catch (e) {
+    msg.textContent = 'サーバーにつながりませんでした。書いた内容は残してあるので、あとでもう一度送ってね'; msg.className = 'msg bad';
+  } finally { $('ctSend').disabled = false; }
+}
+document.querySelectorAll('#ctKind [data-k]').forEach(b => b.onclick = () => { setCtKind(b.dataset.k); b.blur(); });
+$('ctText').addEventListener('input', () => { ctCount(); saveCtDraft(); });
+$('ctSend').onclick = sendContact;
+$('ctBack').onclick = closeContact;
+$('csContact').onclick = () => openContact('charsel');
+$('openContactTitle').onclick = () => openContact('title');
+$('pzContact').onclick = () => openContact('pause');
+// exe版などから ?contact=pc で開いたとき
+(() => { const q = new URLSearchParams(location.search).get('contact'); if (q !== null) { ctPlatform = q === 'pc' ? 'PC版(exe)' : ''; setTimeout(() => { if (G.mode === 'title') openContact('title'); }, 400); } })();
+
 function openNews() {
   $('newsBody').innerHTML = NEWS.map(n => `<h3><small>${n.date}</small>${escapeHtml(n.title)}</h3><ul>${n.items.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`).join('');
   $('newsBody').scrollTop = 0;
