@@ -106,6 +106,8 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
 .home-dock { width: min(1000px, 100%); margin: 0 auto; display: flex; align-items: flex-end; gap: 10px; }
 .home-dock #startGame { margin-left: auto; font-size: 21px; padding: 16px 34px; border-radius: 14px; white-space: nowrap; flex-shrink: 0; }
 .dock-btn > span { white-space: nowrap; }
+@media (max-width: 360px) { .home-dock { gap: 4px; } .dock-btn svg { width: 44px !important; height: 44px !important; padding: 6px !important; } .dock-btn { font-size: 10px !important; }
+  .home-dock #startGame { padding: 12px 12px !important; font-size: 17px !important; } }
 @media (max-width: 480px) { .home-dock { gap: 6px; } .dock-btn svg { width: 50px; height: 50px; padding: 7px; } .dock-btn { font-size: 11px; }
   .home-dock #startGame { padding: 14px 18px; font-size: 19px; } }
 .dock-btn { position: relative; border: 0; background: none; padding: 0; color: var(--paper); font-weight: 800; font-size: 12px;
@@ -139,6 +141,8 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
 /* アカウント・キャラ画面の上:ニックネームなど */
 .acct-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; background: var(--paper); color: var(--ink); border-radius: 10px;
   padding: 10px 14px; margin-bottom: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+.acct-info { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; flex: 1 1 auto; min-width: 0; }
+.acct-box #chDress { margin-left: auto; flex-shrink: 0; padding: 10px 18px; }
 .acct-box .acct-name { font-size: 22px; font-weight: 900; } .acct-box small { color: #555; font-weight: 700; }
 .acct-box .acct-guest { color: var(--vermilion); }
 /* 設定 */
@@ -568,11 +572,10 @@ body.touch .kh { display: none; }
 <!-- 着せ替え・キャラ選択 -->
 <section id="chars" class="screen dim hidden" aria-label="アカウント・キャラ">
   <div class="sheet">
-    <div class="acct-box" id="acctBox"></div>
+    <div class="acct-box"><div class="acct-info" id="acctBox"></div><button class="btn" id="chDress">着せ替え<span class="kh"> [K]</span></button></div>
     <h2>今日は誰で出勤する?</h2>
     <div class="cards" id="cards"></div>
     <div class="sheet-actions">
-      <button class="btn ghost" id="chDress">着せ替え<span class="kh"> [K]</span></button>
       <button class="btn primary" id="chDone">決定<span class="kh"> [Enter]</span></button>
     </div>
   </div>
@@ -718,7 +721,7 @@ body.touch .kh { display: none; }
     <h2>ランキング</h2>
     <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="season">今期</button><button data-t="normal">歴代</button><button data-t="overtime">残業</button><button data-t="daily">今日のお題</button><button data-t="year2" class="hidden">2年目</button><button data-t="year2ot" class="hidden">2年目残業</button><button data-t="time">タイム</button></div>
     <div class="tabs small hidden" id="rkStages" role="group" aria-label="ステージ"><button data-s="1">ステージ1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button></div>
-    <p class="rank-note" id="rkNote">PC版(exe)とWeb版、みんなの自己ベスト</p>
+    <p class="rank-note" id="rkNote">みんなの自己ベスト</p>
     <ol id="rankList" class="rank-list"></ol>
     <div class="row"><button class="btn primary" id="closeRank">もどる</button></div>
   </div>
@@ -2582,7 +2585,7 @@ function openStageSel() {
 function openChars() {
   const sv = G.save;
   $('acctBox').innerHTML = G.acct
-    ? `<span>ニックネーム <span class="acct-name">${escapeHtml(G.acct.name)}</span></span>${titleChip(sv.title)}<span>🏆 ハイスコア ${sv.best}</span><span>${sv.dol}どる</span><small>PC版(exe)でも同じニックネームとパスワードで続きから遊べます</small>`
+    ? `<span>ニックネーム <span class="acct-name">${escapeHtml(G.acct.name)}</span></span>${titleChip(sv.title)}<span>🏆 ハイスコア ${sv.best}</span><span>${sv.dol}どる</span>`
     : `<span class="acct-name">ゲスト</span><span class="acct-guest">ゲストは記録が保存されません。ランキングにのせたいときは、ログアウトしてニックネームでログインしてね</span>`;
   setPicked(picked, true); setMode('chars');
 }
@@ -3351,7 +3354,7 @@ function setRankTab(t, stage) {
   document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
   document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
   $('rkStages').classList.toggle('hidden', t !== 'time');
-  $('rkNote').innerHTML = escapeHtml({ season: seasonNote(), normal: 'PC版(exe)とWeb版、みんなの自己ベスト(歴代)', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
+  $('rkNote').innerHTML = escapeHtml({ season: seasonNote(), normal: 'みんなの自己ベスト(歴代)', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
     daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), year2: '2年目編(ステージ6〜10・テスト中)の自己ベスト(テスト用アカウントにだけ見える)', year2ot: '2年目の残業モード(テスト中)の自己ベスト', time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t]) + (t === 'season' ? seasonPrize() : '');
   loadRank();
 }
@@ -3757,7 +3760,7 @@ const NEWS = [
   ] },
   { id: 10, date: '2026/10/22', title: '「お問い合わせ」ができました', items: [
     'バグの報告や「ここをこうしてほしい」、感想を、ゲームの中から送れるようになりました。ホームの「お問い合わせ [Q]」、一時停止、タイトル画面から開けます',
-    'いただいた内容は作った人が読んで、ゲームをよくするのに使います。PC版(exe)からは、ボタンを押すとブラウザで開きます',
+    'いただいた内容は作った人が読んで、ゲームをよくするのに使います',
   ] },
   { id: 9, date: '2026/10/20', title: 'チュートリアルを追加(Web版)', items: [
     'はじめて遊ぶ人には、1面の最初に操作のチュートリアルが出るようになりました。移動・ジャンプ・AI・課金パワーを実際にやってみながら覚えられます',
