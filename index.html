@@ -2544,18 +2544,45 @@ $('stNext').onclick = e => { moveStage(1); e.currentTarget.blur(); };
 $('csLogout').onclick = () => logout();
 // 確認を出す(はい → onYes)。最初は「やめる」を選んだ状態にして、うっかり Enter でも進まないように
 let cfYes = null;
-function askConfirm(title, text, yesLabel, onYes) {
-  $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfYes').textContent = yesLabel;
+function askConfirm(title, text, yesLabel, onYes, noLabel = 'やめる') {
+  $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfYes').textContent = yesLabel; $('cfNo').textContent = noLabel;
   cfYes = onYes; $('confirmBox').classList.remove('hidden');
-  setTimeout(() => $('cfNo').focus(), 30);
+  // 出てすぐの 0.6 秒は押せない(ガシャのスペース・Enter の連打で、読む前に閉じないように)
+  $('cfNo').disabled = $('cfYes').disabled = true;
+  setTimeout(() => { $('cfNo').disabled = $('cfYes').disabled = false; if (!$('confirmBox').classList.contains('hidden')) $('cfNo').focus(); }, 600);
 }
-function closeConfirm(ok) { const f = cfYes; cfYes = null; $('confirmBox').classList.add('hidden'); if (ok && f) f(); }
+function closeConfirm(ok) { if ($('cfNo').disabled && ok) return; const f = cfYes; cfYes = null; $('confirmBox').classList.add('hidden'); if (ok && f) f(); }
 $('cfNo').onclick = () => closeConfirm(false);
 $('cfYes').onclick = () => closeConfirm(true);
 $('confirmBox').addEventListener('click', e => { if (e.target === $('confirmBox')) closeConfirm(false); });   // まわりを押したらやめる
 function logout() {
   askConfirm('ログアウトする?', G.acct ? `「${G.acct.name}」からログアウトします。また同じニックネームとパスワードで、続きから遊べます。`
     : 'ゲストの記録は保存されていません。ログアウトすると、今の記録は消えます。', 'ログアウト', doLogout);
+}
+// ---- ゲストに登録をすすめる(1面をクリアしたとき。ページを開いている間に1回だけ) ----
+let guestNudged = false, guestCarry = null;
+function guestNudge() {
+  if (G.acct || guestNudged || G.playMode !== 'normal' || G.stage !== 0) return;
+  guestNudged = true;
+  setTimeout(() => askConfirm('記録を残そう!', 'ニックネームを登録すると、スコアがランキングに残って、次からも続きから遊べるよ。ゲストで進めた分(開いたステージ・どる・着せ替えなど)も引き継げます。',
+    '登録する', guestToRegister, 'あとで'), 400);
+}
+function guestToRegister() {
+  persist();   // ゲストの今の分を G.save にまとめる(サーバーには送らない)
+  guestCarry = JSON.parse(JSON.stringify(G.save));
+  dropStagePickups(); G.log = null;
+  openLogin(true); lgMsg('はじめてのニックネームとパスワードを決めて「ログイン」を押すと登録できるよ。ゲストで進めた分を引き継ぐよ', 'good');
+}
+// 新しく登録したときだけ、ゲストの分を足す(数は大きい方・集めた物は合わせる)
+function mergeGuest(save, g) {
+  const s = Object.assign({}, save || {});
+  for (const k of ['unlocked', 'dol', 'ammo', 'special', 'best', 'bonusAi', 'cleared', 'clearChars', 'bestOt'])
+    if (Number(g[k]) > (Number(s[k]) || 0)) s[k] = g[k];
+  for (const k of ['items', 'titles', 'cards']) s[k] = [...new Set([...(s[k] || []), ...(g[k] || [])])];
+  if (!s.title && g.title) s.title = g.title;
+  if (g.equip && !(s.equip && Object.keys(s.equip).length)) s.equip = g.equip;
+  if (g.character !== undefined && s.character === undefined) s.character = g.character;
+  return s;
 }
 function doLogout() {
   if (G.acct) persist('meta');
@@ -2899,7 +2926,13 @@ async function doLogin() {
     const res = await gasPost({ action: 'auth', name, pass });
     if (G.mode !== 'login') return;          // 返事を待つ間にゲストなどで始めていた
     if (!res.ok) return lgMsg(errText(res.error), 'bad');
-    startWith({ name: res.name, token: res.token }, res.save, (res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`) + champMsg(res), !!res.created);
+    const carry = guestCarry; guestCarry = null;
+    if (carry && res.created) {   // ゲストから登録:ゲストで進めた分を新しいアカウントへ
+      startWith({ name: res.name, token: res.token }, mergeGuest(res.save, carry), `はじめまして、${res.name}!\nゲストで進めた分を引き継いだよ`, true);
+      persist('meta'); return;
+    }
+    startWith({ name: res.name, token: res.token }, res.save, (res.created ? `はじめまして、${res.name}!` : `おかえりなさい、${res.name}!`) + champMsg(res) +
+      (carry ? '\n(ゲストの分は、新しく登録したときだけ引き継げます)' : ''), !!res.created);
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgGo').disabled = false; }
 }
@@ -2909,12 +2942,13 @@ async function continueLogin() {
   try {
     const res = await gasPost({ action: 'load', name: acct.name, token: acct.token });
     if (G.mode !== 'login') return;
-    if (res.ok) startWith(acct, res.save, `おかえりなさい、${acct.name}!` + champMsg(res));
+    if (res.ok) { guestCarry = null; startWith(acct, res.save, `おかえりなさい、${acct.name}!` + champMsg(res)); }
     else { store.set('acct', null); G.acct = null; G.session = false; openLogin(true); lgMsg('もう一度パスワードを入れてね', 'bad'); }
   } catch (e) { lgMsg('サーバーにつながりません。ゲストで遊ぶこともできるよ', 'bad'); }
   finally { $('lgContinue').disabled = false; }
 }
-function guestLogin() { startWith(null, { unlocked: STAGES.length }, 'ゲストで遊びます(データは保存されません)'); }   // Python版と同じく全ステージ遊べる
+// ゲストも登録した人と同じく、ステージ1から順に開けていく(登録画面から戻ってきたときは、それまでの分で続ける)
+function guestLogin() { const g = guestCarry; guestCarry = null; startWith(null, g || { unlocked: 1 }, g ? 'ゲストのまま続けます' : 'ゲストで遊びます(データは保存されません)'); }
 $('lgGo').onclick = doLogin;
 $('lgContinue').onclick = continueLogin;
 $('lgOther').onclick = () => openLogin(true);
@@ -3541,7 +3575,7 @@ function stageCleared() {
   const reward = Math.round((st.reward ?? REWARDS[G.stage] ?? 0) * (isOT() ? otParams().dol : 1)); G.doru += reward;
   if (G.playMode === 'normal') G.save.unlocked = Math.max(G.save.unlocked, Math.min(STAGES.length, G.stage + 2));
   if (G.playMode === 'year2') G.save.unlocked2 = Math.max(G.save.unlocked2 || 1, Math.min(STAGES2.length, G.stage + 2));
-  if (G.stage + 1 < list.length) { persist(); openGacha(`${st.name} クリア! +${reward}どる`, 'run'); }
+  if (G.stage + 1 < list.length) { persist(); openGacha(`${st.name} クリア! +${reward}どる`, 'run'); guestNudge(); }
   else {
     allCleared(); persist();
     if (G.acct) { G.endBody = Object.assign(scoreBody(G.acct), { clear: true }); keepScore(G.endBody); }
