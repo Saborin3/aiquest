@@ -102,8 +102,51 @@ h1.logo { font-family: var(--font-title); font-weight: 400; line-height: 1.12; m
 .home-top h2 { font-family: var(--font-title); font-weight: 400; font-size: clamp(22px, 4.2vw, 34px); margin: 4px 0 0; color: var(--paper); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .home-name { margin-top: auto; text-align: center; color: var(--paper); font-weight: 800; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
 .home-name b { font-size: 20px; color: var(--yellow); margin-right: 6px; }
-.home-actions { justify-content: center; margin-top: 0; }
-.home-actions #startGame { font-size: 19px; padding: 14px 36px; }
+/* ホームの下:丸いアイコン(メニュー・ランキング・お知らせ)と、大きな「出勤する」 */
+.home-dock { width: min(1000px, 100%); margin: 0 auto; display: flex; align-items: flex-end; gap: 10px; }
+.home-dock #startGame { margin-left: auto; font-size: 21px; padding: 16px 34px; border-radius: 14px; white-space: nowrap; flex-shrink: 0; }
+.dock-btn > span { white-space: nowrap; }
+@media (max-width: 480px) { .home-dock { gap: 6px; } .dock-btn svg { width: 50px; height: 50px; padding: 7px; } .dock-btn { font-size: 11px; }
+  .home-dock #startGame { padding: 14px 18px; font-size: 19px; } }
+.dock-btn { position: relative; border: 0; background: none; padding: 0; color: var(--paper); font-weight: 800; font-size: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.dock-btn svg { width: 58px; height: 58px; padding: 9px; box-sizing: border-box; border-radius: 50%; border: 3px solid #fff;
+  background: radial-gradient(circle at 35% 25%, #6fc3ff, #2a73c9 70%); box-shadow: 0 4px 0 #173f73, 0 6px 10px rgba(0,0,0,.35); transition: transform .08s; }
+#csMenu svg { background: radial-gradient(circle at 35% 25%, #ffb36b, #e8622a 70%); box-shadow: 0 4px 0 #8a3510, 0 6px 10px rgba(0,0,0,.35); }
+#csRank svg { background: radial-gradient(circle at 35% 25%, #ff8fa8, #d23a62 70%); box-shadow: 0 4px 0 #7a1534, 0 6px 10px rgba(0,0,0,.35); }
+.dock-btn:active svg { transform: translateY(3px); }
+.dock-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; border-radius: 11px; background: #e8222f; color: #fff;
+  border: 2px solid #fff; font-size: 14px; line-height: 18px; text-align: center; text-shadow: none; }
+/* メニュー:絵つきの四角いアイコンを並べる */
+.menu-panel { width: min(780px, 100%); }
+.menu-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin: 6px 0 14px; }
+.menu-tile { position: relative; border: 3px solid #1d2433; border-radius: 16px; padding: 8px 4px 7px; aspect-ratio: 1 / 1.05;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-weight: 900; font-size: 12.5px; color: #1d2433;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.7), inset 0 -4px 0 rgba(0,0,0,.12), 0 4px 0 #1d2433; transition: transform .08s, box-shadow .08s; line-height: 1.25; }
+.menu-tile svg { width: 62%; height: auto; filter: drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+.menu-tile:active { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255,255,255,.7), 0 1px 0 #1d2433; }
+.menu-tile:focus-visible { outline: 4px solid var(--yellow); outline-offset: 2px; }
+.t-chars { background: linear-gradient(#fff3c4, #ffd76a); } .t-gacha { background: linear-gradient(#ffe1ea, #ff9fb8); }
+.t-rank { background: linear-gradient(#fff6c9, #ffcf4a); } .t-help { background: linear-gradient(#e4f7d9, #9fdb83); }
+.t-news { background: linear-gradient(#dff1ff, #8fcdff); } .t-contact { background: linear-gradient(#f0e6ff, #c6a8ff); }
+.t-name { background: linear-gradient(#eef1f5, #c3ccd8); } .t-set { background: linear-gradient(#e9f7f4, #9fd9cc); }
+.menu-panel .row { justify-content: center; }
+@media (max-width: 420px) { .menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } }
+@media (max-height: 460px) { .menu-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; } .menu-tile { font-size: 11px; aspect-ratio: auto; padding: 6px 2px; }
+  .menu-panel { width: min(720px, 100%); } .dock-btn svg { width: 48px; height: 48px; padding: 7px; } .home-dock #startGame { padding: 12px 26px; font-size: 18px; } }
+/* 上の情報:小さなバッジにまとめる */
+.cs-info .pill { background: rgba(0,0,0,.35); border-radius: 99px; padding: 2px 10px; border: 1px solid rgba(255,255,255,.25); }
+/* アカウント・キャラ画面の上:ニックネームなど */
+.acct-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; background: var(--paper); color: var(--ink); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+.acct-box .acct-name { font-size: 22px; font-weight: 900; } .acct-box small { color: #555; font-weight: 700; }
+.acct-box .acct-guest { color: var(--vermilion); }
+/* 設定 */
+.set-list { display: grid; gap: 12px; margin: 6px 0 16px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #fff; border: 2px solid var(--line); }
+.set-row b { font-size: 16px; } .set-row small { display: block; color: #666; font-weight: 600; font-size: 12px; }
+.set-row .seg { flex-shrink: 0; } .set-row .seg button { padding: 10px 18px; font-size: 15px; white-space: nowrap; }
+@media (max-width: 480px) { .set-row { padding: 8px 10px; gap: 8px; } .set-row .seg button { padding: 9px 12px; font-size: 14px; } .set-row small { font-size: 11px; } }
 .ss-who { color: var(--paper); font-weight: 800; margin: -6px 0 6px; } .ss-who b { color: var(--yellow); }
 /* ステージの地図(点と道でつないだワールドマップ) */
 .st-map { width: min(100%, calc(40vh * 10 / 3)); margin-left: auto; margin-right: auto; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 3px rgba(246,245,240,.85), 0 8px 18px rgba(0,0,0,.35); margin-bottom: 10px; }
@@ -334,6 +377,13 @@ body.touch .kh { display: none; }
 .seg button { border: 0; background: none; padding: 8px 14px; font-weight: 800; font-size: 14px; color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 
+/* 確認ダイアログ */
+#confirmBox { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10,14,24,.6); }
+#confirmBox.hidden { display: none; }
+.cf-panel { width: min(400px, 100%); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 18px 20px 16px; box-shadow: 0 8px 0 rgba(0,0,0,.3); }
+.cf-panel h3 { margin: 0 0 6px; font-size: 20px; } .cf-panel p { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: #444; }
+.cf-panel .row { display: flex; gap: 10px; justify-content: flex-end; }
+
 /* お問い合わせ */
 .contact { max-width: 640px; }
 .contact .lead { margin: 4px 0 10px; font-size: 14px; color: #444; }
@@ -478,21 +528,47 @@ body.touch .kh { display: none; }
     <h2>今日も定時退社をめざそう</h2>
   </div>
   <div class="home-name" id="homeName"></div>
-  <div class="sheet-actions home-actions">
-    <button class="btn ghost" id="csRank">ランキング<span class="kh"> [L]</span></button>
-    <button class="btn ghost" id="csLocker">ガシャ・称号<span class="kh"> [G]</span></button>
-    <button class="btn ghost" id="csHelp">あそびかた<span class="kh"> [H]</span></button>
-    <button class="btn ghost" id="csNews">お知らせ<span id="csNewsNew" class="news-new hidden">NEW</span><span class="kh"> [I]</span></button>
-    <button class="btn ghost" id="csContact">お問い合わせ<span class="kh"> [Q]</span></button>
-    <button class="btn ghost" id="csLogout">ニックネームを変える<span class="kh"> [N]</span></button>
-    <button class="btn ghost" id="csChars">着せ替え・キャラ選択<span class="kh"> [C]</span></button>
+  <div class="home-dock">
+    <button class="dock-btn" id="csMenu" aria-label="メニュー"><svg viewBox="0 0 48 48"><rect x="7" y="7" width="14" height="14" rx="4" fill="#fff"/><rect x="27" y="7" width="14" height="14" rx="4" fill="#fff"/><rect x="7" y="27" width="14" height="14" rx="4" fill="#fff"/><rect x="27" y="27" width="14" height="14" rx="4" fill="#ffe600"/></svg><span>メニュー<span class="kh"> [M]</span></span></button>
+    <button class="dock-btn" id="csRank" aria-label="ランキング"><svg viewBox="0 0 48 48"><path d="M14 8h20v8a10 10 0 0 1-20 0z" fill="#ffd23a" stroke="#7a4a00" stroke-width="2.5"/><path d="M14 11H8a6 6 0 0 0 7 8M34 11h6a6 6 0 0 1-7 8" fill="none" stroke="#7a4a00" stroke-width="2.5"/><rect x="21" y="25" width="6" height="7" fill="#e0a800" stroke="#7a4a00" stroke-width="2"/><rect x="14" y="32" width="20" height="7" rx="2" fill="#ffd23a" stroke="#7a4a00" stroke-width="2.5"/><text x="24" y="20" text-anchor="middle" font-size="10" font-weight="900" fill="#7a4a00">1</text></svg><span>ランキング<span class="kh"> [L]</span></span></button>
+    <button class="dock-btn" id="csNews" aria-label="お知らせ"><svg viewBox="0 0 48 48"><path d="M9 20h7l16-9v26l-16-9H9z" fill="#fff" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 28l3 10h5l-2-10" fill="#fff" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/><path d="M37 18q4 6 0 12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg><span>お知らせ<span class="kh"> [I]</span></span><b id="csNewsNew" class="dock-badge hidden">!</b></button>
     <button class="btn primary" id="startGame">出勤する<span class="kh"> [Enter]</span></button>
   </div>
 </section>
 
+<!-- メニュー(アイコンを並べる) -->
+<section id="menu" class="screen dim hidden" aria-label="メニュー">
+  <div class="panel menu-panel">
+    <h2>メニュー</h2>
+    <div class="menu-grid">
+      <button class="menu-tile t-chars" id="csChars"><svg viewBox="0 0 48 48"><path d="M13 14l7 4 7-4 8 5-3 7-3-2v17H12V24l-3 2-3-7z" fill="#3b4a6b" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/><path d="M18 18h5l-1 3 2 11-3.5 4-3.5-4 2-11z" fill="#e8473a" stroke="#1d2433" stroke-width="1.8"/><rect x="27" y="25" width="16" height="12" rx="2" fill="#fff" stroke="#1d2433" stroke-width="2.2"/><rect x="27" y="25" width="16" height="4" rx="1.5" fill="#3fa9f5" stroke="#1d2433" stroke-width="2.2"/><rect x="30" y="31.5" width="10" height="2.5" rx="1" fill="#1d2433"/></svg><span>アカウント・キャラ<span class="kh"> [C]</span></span></button>
+      <button class="menu-tile t-gacha" id="csLocker"><svg viewBox="0 0 48 48"><circle cx="24" cy="18" r="13" fill="#d8f2ff" stroke="#1d2433" stroke-width="2.5"/><circle cx="19" cy="17" r="4" fill="#ff8a3d"/><circle cx="28" cy="21" r="4" fill="#3fa9f5"/><circle cx="26" cy="12" r="3.5" fill="#ffd23a"/><rect x="11" y="29" width="26" height="13" rx="3" fill="#e8473a" stroke="#1d2433" stroke-width="2.5"/><circle cx="24" cy="35.5" r="3" fill="#fff" stroke="#1d2433" stroke-width="2"/></svg><span>ガシャ・称号<span class="kh"> [G]</span></span></button>
+      <button class="menu-tile t-help" id="csHelp"><svg viewBox="0 0 48 48"><path d="M8 11q8-4 16 1v27q-8-5-16-1z" fill="#fff" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 11q-8-4-16 1v27q8-5 16-1z" fill="#fff6c8" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/><text x="32" y="30" text-anchor="middle" font-size="15" font-weight="900" fill="#e8473a">?</text></svg><span>あそびかた<span class="kh"> [H]</span></span></button>
+      <button class="menu-tile t-contact" id="csContact"><svg viewBox="0 0 48 48"><rect x="7" y="12" width="34" height="24" rx="4" fill="#fff" stroke="#1d2433" stroke-width="2.5"/><path d="M8 14l16 12 16-12" fill="none" stroke="#1d2433" stroke-width="2.5" stroke-linejoin="round"/></svg><span>お問い合わせ<span class="kh"> [Q]</span></span></button>
+      <button class="menu-tile t-set" id="mnSettings"><svg viewBox="0 0 48 48"><path d="M24 6l3.2 4.6 5.4-1.6 1 5.6 5.4 1.8-1.8 5.4 4.2 3.7-4.2 3.7 1.8 5.4-5.4 1.8-1 5.6-5.4-1.6L24 42l-3.2-4.6-5.4 1.6-1-5.6-5.4-1.8 1.8-5.4L6.6 22.5l4.2-3.7L9 13.4l5.4-1.8 1-5.6 5.4 1.6z" fill="#9aa3ad" stroke="#1d2433" stroke-width="2.3" stroke-linejoin="round"/><circle cx="24" cy="24" r="7" fill="#fff" stroke="#1d2433" stroke-width="2.3"/></svg><span>設定<span class="kh"> [S]</span></span></button>
+      <button class="menu-tile t-name" id="csLogout"><svg viewBox="0 0 48 48"><rect x="9" y="7" width="20" height="34" rx="2" fill="#c98a4b" stroke="#1d2433" stroke-width="2.5"/><circle cx="24" cy="25" r="1.8" fill="#1d2433"/><path d="M27 24h14m-5-5 5 5-5 5" fill="none" stroke="#e8473a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>ログアウト<span class="kh"> [N]</span></span></button>
+    </div>
+    <div class="row"><button class="btn" id="mnClose">もどる<span class="kh"> [Esc]</span></button></div>
+  </div>
+</section>
+
+<!-- 設定 -->
+<section id="settings" class="screen dim hidden" aria-label="設定">
+  <div class="panel menu-panel" style="width: min(520px, 100%)">
+    <h2>設定</h2>
+    <div class="set-list">
+      <div class="set-row"><div><b>BGM</b><small>ゲーム中の音楽</small></div><span class="seg" role="group" aria-label="BGM"><button id="stBgmOn">ON</button><button id="stBgmOff">OFF</button></span></div>
+      <div class="set-row"><div><b>キャラの声</b><small>ジャンプ・投げる・ミスのときのセリフ</small></div><span class="seg" role="group" aria-label="キャラの声"><button id="stVoiceOn">ON</button><button id="stVoiceOff">OFF</button></span></div>
+      <div class="set-row"><div><b>操作方法</b><small>キーボード・マウス か、画面のスティックとボタンか</small></div><span class="seg" role="group" aria-label="操作方法"><button id="stPC">PC</button><button id="stTouch">タッチ</button></span></div>
+    </div>
+    <div class="row" style="justify-content:center"><button class="btn primary" id="stClose">もどる<span class="kh"> [Esc]</span></button></div>
+  </div>
+</section>
+
 <!-- 着せ替え・キャラ選択 -->
-<section id="chars" class="screen dim hidden" aria-label="着せ替え・キャラ選択">
+<section id="chars" class="screen dim hidden" aria-label="アカウント・キャラ">
   <div class="sheet">
+    <div class="acct-box" id="acctBox"></div>
     <h2>今日は誰で出勤する?</h2>
     <div class="cards" id="cards"></div>
     <div class="sheet-actions">
@@ -560,6 +636,14 @@ body.touch .kh { display: none; }
     <div id="tutChecks"></div>
     <p id="tutAct"></p>
     <div class="row" id="tutRow"><button class="btn primary" id="tutNext">次へ</button></div>
+  </div>
+</div>
+<!-- 確認(ログアウトなど) -->
+<div id="confirmBox" class="hidden" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="cf-panel">
+    <h3 id="cfTitle"></h3>
+    <p id="cfText"></p>
+    <div class="row"><button class="btn" id="cfNo">やめる</button><button class="btn primary" id="cfYes">はい</button></div>
   </div>
 </div>
 <div id="toast" class="hidden"></div>
@@ -2014,6 +2098,11 @@ window.addEventListener('keydown', e => {
     return;
   }
   const k = keyOf(e);
+  if (!$('confirmBox').classList.contains('hidden')) {   // 確認が出ているとき:Esc でやめる。Enter・スペースは選んでいるボタン
+    if (k === 'Escape') { e.preventDefault(); closeConfirm(false); }
+    else if (!(e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' '))) e.preventDefault();
+    return;
+  }
   // 押しっぱなしのキーで、出てきたばかりのボタンが押されないように(ゲームオーバー直後にすぐ再スタートしない)
   if (e.repeat && e.target && e.target.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) { e.preventDefault(); return; }
   // メニューでボタンにフォーカスがあるときの Enter / スペースは、ボタンに任せる(2回動かないように)
@@ -2054,11 +2143,18 @@ window.addEventListener('keydown', e => {
     if (k === 'q') openContact();
     if (k === 'h') openIntro(() => openCharsel());
     if (k === 'c') openChars();
+    if (k === 'm') openMenu();
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
-    if (k === 'n') openLogin(true);
+    if (k === 'n') logout();
     if (k === 'Enter' || k === ' ') { e.preventDefault(); openStageSel(); }
     if (k === 'Escape') openLogin(true);
+  } else if (G.mode === 'menu') {      // メニュー
+    const go = { c: openChars, g: () => openLocker(), l: openRanking, h: () => openIntro(() => openCharsel()), i: openNews, q: () => openContact('charsel'), n: logout, s: openSettings }[k];
+    if (go) go();
+    if (k === 'Escape' || k === 'm') openCharsel();
+  } else if (G.mode === 'settings') {
+    if (k === 'Escape' || k === 's') openMenu();
   } else if (G.mode === 'chars') {     // 着せ替え・キャラ選択
     if (k === 'ArrowLeft' || k === 'a') setPicked(picked - 1);
     if (k === 'ArrowRight' || k === 'd') setPicked(picked + 1);
@@ -2216,9 +2312,9 @@ function loop(t) {
   else if (G.mode === 'ending' && END) updateEnding(dt);
   else if (G.mode === 'result' && G.fx.length) updateFx(dt);
   if (G.mode === 'locker') updateLocker(dt);
-  else if (G.mode === 'charsel') updateHome(dt);
+  else if (G.mode === 'charsel' || G.mode === 'menu') updateHome(dt);
   else if (lkHero) closeLockerPreview();
-  if (G.player && G.mode !== 'ending' && G.mode !== 'locker' && G.mode !== 'charsel') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
+  if (G.player && G.mode !== 'ending' && G.mode !== 'locker' && G.mode !== 'charsel' && G.mode !== 'menu') placeCamera(G.mode === 'play' || G.mode === 'special' ? dt : 0.05);
   if (TUT.on) placeTut();
   } catch (err) { if (!loop.warned) { loop.warned = true; console.error(err); } }   // 1回のエラーでゲーム全体が止まらないように
   renderer.render(scene, camera);
@@ -2236,6 +2332,8 @@ function setMode(m) {
   $('title').classList.toggle('hidden', m !== 'title');
   $('charsel').classList.toggle('hidden', m !== 'charsel');
   $('chars').classList.toggle('hidden', m !== 'chars');
+  $('menu').classList.toggle('hidden', m !== 'menu');
+  $('settings').classList.toggle('hidden', m !== 'settings');
   $('stagesel').classList.toggle('hidden', m !== 'stagesel');
   $('login').classList.toggle('hidden', m !== 'login');
   $('gacha').classList.toggle('hidden', m !== 'gacha');
@@ -2346,8 +2444,8 @@ function refreshCharsel() {
   const play = selPlay(), y2 = play === 'year2';
   $('csYearRow').classList.toggle('hidden', !yearOpen(2));
   document.querySelectorAll('#csYear [data-y]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.y) === G.selYear)));
-  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span>ハイスコア ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${isTester() && sv.best2 ? ` / 2年目 ${sv.best2}` : ''}${isTester() && sv.best2ot ? ` / 2年目残業 ${sv.best2ot}` : ''}</span><span>所持 ${sv.dol}どる</span>` +
-    `<span>AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span>課金パワー ${sv.special}</span>`;
+  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span class="pill">🏆 ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${isTester() && sv.best2 ? ` / 2年目 ${sv.best2}` : ''}${isTester() && sv.best2ot ? ` / 2年目残業 ${sv.best2ot}` : ''}</span><span class="pill">${sv.dol}どる</span>` +
+    `<span class="pill">AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span class="pill">課金 ${sv.special}</span>`;
   document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); b.classList.toggle('hidden', b.dataset.m === 'daily' && G.selYear === 2); });
   const note = $('csModeNote');
   // 見せないときも場所は取っておく(1年目・2年目・モードで、画面の中身が上下にずれないように)
@@ -2440,7 +2538,27 @@ function moveStage(d) {
 }
 $('stPrev').onclick = e => { moveStage(-1); e.currentTarget.blur(); };   // Enter でもう一度押されないように
 $('stNext').onclick = e => { moveStage(1); e.currentTarget.blur(); };
-$('csLogout').onclick = () => openLogin(true);
+$('csLogout').onclick = () => logout();
+// 確認を出す(はい → onYes)。最初は「やめる」を選んだ状態にして、うっかり Enter でも進まないように
+let cfYes = null;
+function askConfirm(title, text, yesLabel, onYes) {
+  $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfYes').textContent = yesLabel;
+  cfYes = onYes; $('confirmBox').classList.remove('hidden');
+  setTimeout(() => $('cfNo').focus(), 30);
+}
+function closeConfirm(ok) { const f = cfYes; cfYes = null; $('confirmBox').classList.add('hidden'); if (ok && f) f(); }
+$('cfNo').onclick = () => closeConfirm(false);
+$('cfYes').onclick = () => closeConfirm(true);
+$('confirmBox').addEventListener('click', e => { if (e.target === $('confirmBox')) closeConfirm(false); });   // まわりを押したらやめる
+function logout() {
+  askConfirm('ログアウトする?', G.acct ? `「${G.acct.name}」からログアウトします。また同じニックネームとパスワードで、続きから遊べます。`
+    : 'ゲストの記録は保存されていません。ログアウトすると、今の記録は消えます。', 'ログアウト', doLogout);
+}
+function doLogout() {
+  if (G.acct) persist('meta');
+  store.set('acct', null); G.acct = null; G.session = false;
+  openLogin(true); lgMsg('ログアウトしました。また同じニックネームとパスワードで続きから遊べます', 'good');
+}
 function setPicked(i, quiet) {
   const changed = !quiet && picked !== (i + CHARS.length) % CHARS.length;
   picked = (i + CHARS.length) % CHARS.length;
@@ -2461,7 +2579,13 @@ function openStageSel() {
   setMode('stagesel'); refreshCharsel(); stNameFit = ''; fitStageName();
   setTimeout(() => $('ssGo').focus(), 60);
 }
-function openChars() { setPicked(picked, true); setMode('chars'); }
+function openChars() {
+  const sv = G.save;
+  $('acctBox').innerHTML = G.acct
+    ? `<span>ニックネーム <span class="acct-name">${escapeHtml(G.acct.name)}</span></span>${titleChip(sv.title)}<span>🏆 ハイスコア ${sv.best}</span><span>${sv.dol}どる</span><small>PC版(exe)でも同じニックネームとパスワードで続きから遊べます</small>`
+    : `<span class="acct-name">ゲスト</span><span class="acct-guest">ゲストは記録が保存されません。ランキングにのせたいときは、ログアウトしてニックネームでログインしてね</span>`;
+  setPicked(picked, true); setMode('chars');
+}
 function refreshHomeName() { const c = CHARS[picked]; $('homeName').innerHTML = `<b>${c.name}</b>${c.role}(スコア ×${c.score})`; }
 
 
@@ -2475,6 +2599,8 @@ function helpHTML(dev) {
 }
 const RULES = `<p>おくの「退勤」ドアに入ればクリア。敵(仕事)はAIを投げるか、上から踏んで倒す(踏むとスコア2倍、着地せずに続けて踏むとコンボ)。各ステージに社員証が3枚かくれているよ。速く・ノーミスで・AIを使わずにクリアするほどボーナスが増える。AIは右上の数だけ投げられる。?ブロックを下から叩くとAIが増える。金色の「課金」ブロックを叩くと、まわりの敵をまとめて倒す必殺技が使えるよ。ボスはAIを3発当てるごとに「差し戻しガード」でAIをはね返すから、そのときは踏むか、少し待とう。</p>`;
 function refreshVoiceBtns() {
+  for (const [id, on] of [['stVoiceOn', voiceOn()], ['stVoiceOff', !voiceOn()], ['stBgmOn', bgmOn()], ['stBgmOff', !bgmOn()], ['stPC', G.device !== 'touch'], ['stTouch', G.device === 'touch']])
+    if ($(id)) $(id).setAttribute('aria-pressed', String(on));
   $('vOn').setAttribute('aria-pressed', String(voiceOn())); $('vOff').setAttribute('aria-pressed', String(!voiceOn()));
   $('mOn').setAttribute('aria-pressed', String(bgmOn())); $('mOff').setAttribute('aria-pressed', String(!bgmOn()));
 }
@@ -2526,6 +2652,13 @@ $('vOn').onclick = () => { store.set('voice', true); refreshVoiceBtns(); };
 $('vOff').onclick = () => { store.set('voice', false); refreshVoiceBtns(); };
 $('mOn').onclick = () => { store.set('bgm', true); refreshVoiceBtns(); bgmLevel(BGM.level); };
 $('mOff').onclick = () => { store.set('bgm', false); refreshVoiceBtns(); bgmLevel(BGM.level); };
+// 設定画面(メニューの「設定」)
+$('stBgmOn').onclick = () => $('mOn').onclick(); $('stBgmOff').onclick = () => $('mOff').onclick();
+$('stVoiceOn').onclick = () => $('vOn').onclick(); $('stVoiceOff').onclick = () => $('vOff').onclick();
+$('stPC').onclick = () => { setDevice('pc'); refreshVoiceBtns(); }; $('stTouch').onclick = () => { setDevice('touch'); refreshVoiceBtns(); };
+$('stClose').onclick = () => openMenu();
+$('mnSettings').onclick = () => openSettings();
+function openSettings() { refreshVoiceBtns(); setMode('settings'); }
 
 // 結果
 let resultNext = null;
@@ -2806,7 +2939,8 @@ function persist(from = 'play', keepalive = false) {
   const body = { action: 'save', name: G.acct.name, token: G.acct.token, save: Object.assign({}, sv) };
   if (keepalive) { gasPost(body, true).catch(() => {}); return; }   // ページを閉じるときは、待たずにすぐ送る
   saveBusy = saveBusy.then(() => gasPost(body).then(res => {
-    if (!res.ok && res.error === 'not owner') { if (G.acct) toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); G.acct = null; }
+    // 送ったときと同じ人のときだけ(ログアウトして別の人が入ったあとに返事が来ても、その人をログアウトさせない)
+    if (!res.ok && res.error === 'not owner') { if (G.acct && G.acct.name === body.name) { toast('ログインが切れました\nもう一度ログインしてね', true); store.set('acct', null); G.acct = null; } }
     else if (!res.ok && res.error === 'busy') retrySave(from);      // 混んでいた → 少しあとでもう一度
   }).catch(() => retrySave(from)));
 }
@@ -3127,8 +3261,8 @@ function introPages() {
     : '<ul><li>W A S D … 移動(A・Dは横歩き)</li><li>← → … 向きを変える   ↑ ↓ … 視点を上下</li><li>Shift … ダッシュ(Wで走り続けても加速)</li><li>スペース … ジャンプ(短く押すと小ジャンプ。ダッシュ中は高く遠くまで)</li>' +
       '<li>F / クリック … AIを投げる</li><li>E … 必殺技「課金パワー」</li><li>H / Esc … 一時停止・あそびかた</li><li>R … この面をやり直す</li></ul>';
   const screens = G.device === 'touch'
-    ? '<ul><li>【ホーム】「出勤する」でステージ選択、「着せ替え・キャラ選択」でキャラを選ぶ</li><li>【ステージ選択】◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
-    : '<ul><li>【ホーム】Enter 出勤する(ステージ選択へ)、C 着せ替え・キャラ選択、← → キャラ</li><li>    L ランキング、G ガシャ・称号、I お知らせ、Q お問い合わせ、H あそびかた</li><li>【ステージ選択】← → スタートするステージ、M モード、Enter 出勤!、Esc もどる</li>' +
+    ? '<ul><li>【ホーム】「出勤する」でステージ選択。「メニュー」からアカウント・キャラ、ガシャ、設定、お問い合わせなど</li><li>【ステージ選択】◀ ▶ でスタートするステージ</li><li>【ガシャ】「回す」で100どる</li><li>【エンディング】「スキップ」でとばせる</li></ul>'
+    : '<ul><li>【ホーム】Enter 出勤する(ステージ選択へ)、M メニュー、← → キャラ</li><li>    C アカウント・キャラ、S 設定、L ランキング、G ガシャ・称号、I お知らせ、Q お問い合わせ、H あそびかた、N ログアウト</li><li>【ステージ選択】← → スタートするステージ、M モード、Enter 出勤!、Esc もどる</li>' +
       '<li>【ガシャ】スペース 回す(100どる)、Enter 次へ</li><li>【エンディング】Enter でとばす</li></ul>';
   const chars = CHARS.slice().sort((a, b) => a.score - b.score).map(c =>
     `<div class="ch"><b>${c.name}</b>(スコア <span class="mult">×${c.score}</span>)… ${c.role}<br>${c.desc}</div>`).join('');
@@ -3254,7 +3388,7 @@ async function loadRank() {
 }
 document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.onclick = () => { setRankTab(b.dataset.t); b.blur(); });
 document.querySelectorAll('#rkStages [data-s]').forEach(b => b.onclick = () => { setRankTab('time', Number(b.dataset.s)); b.blur(); });
-function closeRanking() { if (rankFrom === 'charsel') openCharsel(); else setMode(rankFrom === 'result' ? 'result' : 'title'); }
+function closeRanking() { if (rankFrom === 'charsel' || rankFrom === 'menu') openCharsel(); else setMode(rankFrom === 'result' ? 'result' : 'title'); }
 function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 $('openRankTitle').onclick = openRanking;
 $('closeRank').onclick = closeRanking;
@@ -3570,10 +3704,11 @@ function updateHome(dt) {
   lkHero.rotation.y = Math.atan2(Math.cos(a) * r, -Math.sin(a) * r * 0.45);   // 進む向きを向く
   poseHero(lkHero, true, true, dt * 0.55);
   lkFloor.scale.set(1.75, 1, 1.25);
+  if (G.mode !== 'charsel') return;   // メニューを開いている間は、カメラはそのまま
   // 上の文字と下の名前のあいだ(あいている所)に、台とキャラがちょうど入るようにカメラを合わせる
   const top = $('charsel').querySelector('.home-top').getBoundingClientRect().bottom, bot = $('homeName').getBoundingClientRect().top;
   const H = innerHeight, free = Math.max(60, bot - top), c = (top + bot) / 2 / H, t = Math.tan(camera.fov * Math.PI / 360);
-  const dist = Math.max(4.4 / (free / H) / (2 * t), 7.2 / (2 * t * camera.aspect), 6);   // 高さ 4.4・幅 7.2 くらいが見えるように
+  const dist = Math.max(5.2 / (free / H) / (2 * t), 7.2 / (2 * t * camera.aspect), 6);   // 高さ 5.2・幅 7.2 くらいが見えるように
   const visH = 2 * t * dist, lookY = 1.0 + (c - 0.5) * visH;
   camera.position.set(LK_POS.x, lookY + dist * 0.22, LK_POS.z + dist);
   camera.lookAt(LK_POS.x, lookY, LK_POS.z);
@@ -3750,6 +3885,9 @@ function openNews() {
   refreshNewsBadge(); setMode('news');
 }
 $('csNews').onclick = () => openNews();
+$('csMenu').onclick = () => openMenu();
+$('mnClose').onclick = () => openCharsel();
+function openMenu() { setMode('menu'); setTimeout(() => $('csChars').focus(), 60); }
 $('closeNews').onclick = () => openCharsel();
 document.querySelectorAll('#csMode [data-m]').forEach(b => b.onclick = () => { setSelMode(b.dataset.m); b.blur(); });
 document.querySelectorAll('#csYear [data-y]').forEach(b => b.onclick = () => { setSelYear(Number(b.dataset.y)); b.blur(); });
