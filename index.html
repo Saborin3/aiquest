@@ -239,6 +239,7 @@ body.touch .kh { display: none; }
 .cs-stage { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; color: var(--yellow); font-weight: 800; }
 .cs-stage .btn { padding: 6px 12px; }
 .cs-stage .btn:disabled { opacity: .35; }
+#stName { text-align: center; max-width: calc(100vw - 180px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 幅はいちばん長いステージ名に合わせて固定(JS) */
 .gacha { text-align: center; }
 .gacha .machine { position: relative; width: 170px; height: 210px; margin: 6px auto 0; }
 .gacha .globe { position: absolute; left: 15px; top: 0; width: 140px; height: 140px; border-radius: 50%; background: rgba(86,180,233,.18);
@@ -2205,6 +2206,21 @@ function openCharsel() {
   for (const c of CHARS) preloadVoices(c.name, ['select']);
   setPicked(picked, true); refreshCharsel();
 }
+// ステージ選択:名前の長さで ◀ ▶ が動かないように、ありうる名前(1年目・2年目ぜんぶ)でいちばん長い幅に固定する
+function stageLabel(y2, i) { return y2 ? `スタート:ステージ${i + 1 + STAGES.length} ${STAGES2[i].name}` : `スタート:ステージ${i + 1} ${STAGES[i].name}`; }
+let stNameFit = '';
+function fitStageName() {
+  const el = $('stName'), cs = getComputedStyle(el), key = cs.font + innerWidth;
+  if (!el.offsetParent || key === stNameFit) return;
+  const m = document.createElement('span');
+  Object.assign(m.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', font: cs.font, letterSpacing: cs.letterSpacing });
+  document.body.appendChild(m);
+  let w = 0;
+  for (const [y2, n] of [[false, STAGES.length], [true, STAGES2.length]]) for (let i = 0; i < n; i++) { m.textContent = stageLabel(y2, i); w = Math.max(w, m.getBoundingClientRect().width); }
+  m.remove(); el.style.width = `${Math.ceil(w) + 2}px`; stNameFit = key;
+}
+addEventListener('resize', () => { stNameFit = ''; fitStageName(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stNameFit = ''; fitStageName(); });
 function refreshCharsel() {
   const sv = G.save, who = G.acct ? G.acct.name : 'ゲスト';
   if (!yearOpen(G.selYear)) G.selYear = 1;
@@ -2226,7 +2242,7 @@ function refreshCharsel() {
   G.startStage = Math.max(0, Math.min(G.startStage, sv.unlocked - 1));
   G.startStage2 = Math.max(0, Math.min(G.startStage2 || 0, (sv.unlocked2 || 1) - 1));
   const [cur, max] = selStage();
-  $('stName').textContent = y2 ? `スタート:ステージ${cur + 1 + STAGES.length} ${STAGES2[cur].name}` : `スタート:ステージ${cur + 1} ${STAGES[cur].name}`;
+  $('stName').textContent = stageLabel(y2, cur); fitStageName();
   $('stPrev').disabled = cur <= 0; $('stNext').disabled = cur >= max;
 }
 function selStage() { return selPlay() === 'year2' ? [G.startStage2 || 0, (G.save.unlocked2 || 1) - 1] : [G.startStage, G.save.unlocked - 1]; }   // [今のスタート, 選べる最後]
