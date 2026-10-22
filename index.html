@@ -2228,7 +2228,8 @@ function loop(t) {
 // ---------------- 画面(DOM) ----------------
 const $ = id => document.getElementById(id);
 function setMode(m) {
-  if (TUT.on && !(TUT.kind === 'rank' ? m === 'ranking' : ['play', 'pause', 'special'].includes(m))) endTutorial(true);
+  // 一時停止からお問い合わせを開いて戻るときも、練習は続ける(ここで終わると、練習の点が残ってしまう)
+  if (TUT.on && !(TUT.kind === 'rank' ? m === 'ranking' : ['play', 'pause', 'special', 'contact'].includes(m))) endTutorial(true);
   G.mode = m;
   setTimeout(bgmScene, 0);
   if (m === 'play' && document.activeElement && document.activeElement.blur) document.activeElement.blur();   // スペースでボタンが押されないように
@@ -2503,7 +2504,7 @@ function dropStagePickups() {   // クリアしていないステージで増え
   }
   if (G.stageSpecial0 !== undefined) G.special = Math.min(G.special, G.stageSpecial0);
 }
-$('toMenu').onclick = () => { endLog('quit'); dropStagePickups(); persist(); sendScoreQuiet(); openCharsel(); };
+$('toMenu').onclick = () => { endLog(TUT.on && TUT.kind === 'game' ? 'tutorial' : 'quit'); dropStagePickups(); persist(); sendScoreQuiet(); openCharsel(); };
 $('openHelpTitle').onclick = () => openPause('あそびかた');
 function setDevice(dev) {   // 一時停止画面のまま、説明と表示だけ切りかえる(もどる先は変えない)
   G.device = dev; store.set('device', dev); document.body.classList.toggle('touch', dev === 'touch');
@@ -2639,6 +2640,7 @@ function scoreBody(acct) {
 // 途中でやめたとき(キャラ選択へ・ページを閉じる)も、そこまでのスコアをランキングに送る
 // (前は結果画面でしか送っていなかったので、タイムアタックには載るのに通常ランキングに載らないことがあった)
 function sendScoreQuiet(keepalive = false) {
+  if (TUT.on && TUT.kind === 'game') G.score = G.stageScore0 || 0;   // 練習(チュートリアル)中にやめたら、練習の点は送らない
   if (!G.acct || G.submitted || !(G.score > 0) || !G.char) return;
   G.submitted = true; G.lastKind = 'quit';
   const body = scoreBody(G.acct);
@@ -2863,7 +2865,7 @@ addEventListener('pageshow', e => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushScores(true); });
 addEventListener('pagehide', () => { if (gachaGrant) gachaGrant(); flushScores(true); });
-addEventListener('pagehide', () => { if (G.log) endLog('quit'); if (['play', 'gacha', 'special'].includes(G.mode) || (G.mode === 'pause' && pauseReturn === 'play')) sendScoreQuiet(true); });
+addEventListener('pagehide', () => { if (G.log) endLog(TUT.on && TUT.kind === 'game' ? 'tutorial' : 'quit'); if (['play', 'gacha', 'special'].includes(G.mode) || (G.mode === 'pause' && pauseReturn === 'play')) sendScoreQuiet(true); });
 
 // ---------------- 社内ガシャ ----------------
 let gachaBusy = false, gachaFrom = 'run', gachaGrant = null;
@@ -3736,7 +3738,10 @@ $('csContact').onclick = () => openContact('charsel');
 $('openContactTitle').onclick = () => openContact('title');
 $('pzContact').onclick = () => openContact('pause');
 // exe版などから ?contact=pc で開いたとき
-(() => { const q = new URLSearchParams(location.search).get('contact'); if (q !== null) { ctPlatform = q === 'pc' ? 'PC版(exe)' : ''; setTimeout(() => { if (G.mode === 'title') openContact('title'); }, 400); } })();
+(() => { const q = new URLSearchParams(location.search).get('contact'); if (q !== null) { ctPlatform = q === 'pc' ? 'PC版(exe)' : '';
+  // 再読み込みでまた開かないように、アドレスから ?contact を外す
+  try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* file:// など */ }
+  setTimeout(() => { if (G.mode === 'title') openContact('title'); }, 400); } })();
 
 function openNews() {
   $('newsBody').innerHTML = NEWS.map(n => `<h3><small>${n.date}</small>${escapeHtml(n.title)}</h3><ul>${n.items.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`).join('');
