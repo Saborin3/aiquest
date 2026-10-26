@@ -719,7 +719,7 @@ body.touch .kh { display: none; }
 <section id="ranking" class="screen dim hidden" aria-label="ランキング">
   <div class="panel">
     <h2>ランキング</h2>
-    <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="season">今期</button><button data-t="normal">歴代</button><button data-t="overtime">残業</button><button data-t="daily">今日のお題</button><button data-t="year2" class="hidden">2年目</button><button data-t="year2ot" class="hidden">2年目残業</button><button data-t="time">タイム</button></div>
+    <div class="tabs" id="rkTabs" role="group" aria-label="ランキングの種類"><button data-t="season">今期</button><button data-t="normal">歴代</button><button data-t="overtime">1年目残業</button><button data-t="daily">今日のお題</button><button data-t="year2">2年目</button><button data-t="year2ot">2年目残業</button><button data-t="time">タイム</button></div>
     <div class="tabs small hidden" id="rkStages" role="group" aria-label="ステージ"><button data-s="1">ステージ1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button></div>
     <p class="rank-note" id="rkNote">みんなの自己ベスト</p>
     <ol id="rankList" class="rank-list"></ol>
@@ -863,24 +863,22 @@ const LABEL_COLORS = {
   '催促': ['#ffdcdc', '#b40000'], '差し戻し': ['#f0e6ff', '#5a1e96'], '仕様変更': ['#dcffeb', '#00643c'],
   '炎上案件': ['#ffd2b4', '#b42800'], '社長の\n無茶ぶり': ['#ffe1e1', '#8c0000'],
 };
-// ---------------- 2年目編(ステージ6〜10)。まだテスト中なので、テスト用アカウントでログインしたときだけ遊べる ----------------
+// ---------------- 2年目編(ステージ6〜10)。1年目(ステージ5)をクリアすると、だれでも遊べる ----------------
 // データは PC版の stage2_data.py の YEAR2_JSON をそのまま貼ったもの(直すときは向こうを直して貼り直す)
-const TESTERS = ['k01'];   // テスト用アカウント(小文字)
 const YEAR2 = {"labels":{"通知":[[230,245,255],[0,90,170]],"チャット":[[225,255,235],[0,120,60]],"既読スルー":[[245,245,245],[90,90,90]],"回線落ち":[[60,60,70],[255,220,80]],"Web会議":[[30,70,140],[255,255,255]],"段ボール":[[205,160,110],[80,45,10]],"配線":[[40,40,40],[240,228,66]],"備品リスト":[[255,250,220],[120,90,0]],"段ボールの山":[[180,130,80],[255,255,255]],"よっぱらい\n上司":[[255,200,200],[170,0,40]],"二次会の\n誘い":[[255,225,245],[160,0,110]],"一発芸":[[255,240,180],[200,80,0]],"幹事の\n仕事":[[230,240,255],[40,60,160]],"幹事":[[120,30,30],[255,230,120]],"出し物\nリクエスト":[[204,121,167],[255,255,255]],"急ぎの\n電話":[[255,215,215],[190,0,0]],"明日までの\n資料":[[235,235,235],[40,40,40]],"残業命令":[[60,0,0],[255,200,200]],"エレベーター\n待ち":[[220,230,240],[50,60,80]],"自己評価\nシート":[[255,250,220],[120,90,0]],"目標設定":[[225,255,235],[0,110,60]],"役員":[[30,30,30],[230,200,120]],"評価シート":[[240,225,255],[90,0,140]],"360度\nフィードバック":[[220,230,255],[40,40,160]],"評価面談":[[20,20,40],[255,215,0]],"評価\nコメント":[[213,94,0],[255,255,255]],"差し戻し":[[255,220,240],[180,0,90]],"お土産":[[255,235,205],[150,70,0]]},"stages":[{"name":"リモートワークの日","floor":"#9ba7b8","sky":"#4a74b0","hallucination":0.26,"reward":800,"ai":16,"par":55,"floors":[[[0,-0.5,5],[24,1,30]],[[0,-0.5,62],[24,1,40]]],"blocks":[[[6,1,12],[3,2,3],"#4e3b2a"],[[-6,1,8],[3,2,3],"#4e3b2a"]],"blinkers":[[[0,-0.25,23],[3,0.5,3],2.0,1.2,2.0],[[0,-0.25,27],[3,0.5,3],2.0,1.2,1.5],[[0,-0.25,31],[3,0.5,3],2.0,1.2,1.0],[[0,-0.25,35],[3,0.5,3],2.0,1.2,0.5],[[0,-0.25,39],[3,0.5,3],2.0,1.2,0.0]],"qblocks":[[[3,4,4],"coffee"],[[-3,4,4],"point"],[[0,4,48],"coffee"],[[-6,4,16],"point"],[[6,4,60],"point"]],"lifeblocks":[[6,5,12]],"kakin":[-6,4,50],"checkpoints":[[0,0,45]],"enemies":[{"position":[0,0.5,8],"label":"通知","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,14],"label":"チャット","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[8,0.5,4],"label":"既読スルー","speed":4.0,"chase":5},{"position":[4,0.5,17],"label":"チャット","axis":[1,0,0],"patrol":3,"speed":4.5},{"position":[0,0.5,52],"label":"回線落ち","axis":[1,0,0],"patrol":7,"speed":6.5},{"position":[-7,0.5,58],"label":"通知","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[7,0.5,56],"label":"既読スルー","speed":4.0,"chase":4}],"boss":{"position":[0,1.5,70],"label":"Web会議","hp":14,"size":3,"speed":3,"arena":7,"freeze":[3.5,1.6],"shoot_interval":2.6,"shot_label":"通知","far_guard":10},"goal":[0,0,80]},{"name":"オフィス移転","floor":"#a39a8c","sky":"#3f86c4","hallucination":0.28,"reward":900,"ai":18,"par":65,"floors":[[[0,-0.5,40],[24,1,100]]],"conveyors":[[[0,0.05,14],[14,0.1,8],[0,0,-1],4.5],[[0,0.05,32],[16,0.1,6],[1,0,0],5],[[0,0.05,48],[14,0.1,8],[0,0,-1],5]],"blocks":[[[-7,0.75,22],[2,1.5,2],"#b5835a"],[[7,0.75,24],[2,1.5,2],"#b5835a"],[[-4,1,40],[2,2,2],"#b5835a"],[[5,1,56],[3,2,3],"#b5835a"]],"droppers":[[[3,0,38],3,2.0,0,"段ボール"],[[-3,0,46],3,2.0,1.0,"段ボール"],[[3,0,52],3,2.0,0.5,"段ボール"],[[-3,0,60],3,2.0,1.1,"段ボール"],[[3,0,63],3,2.2,0.4,"段ボール"]],"qblocks":[[[0,4,6],"point"],[[-3,4,30],"coffee"],[[5,5,56],"coffee"],[[3,4,26],"point"],[[-5,4,70],"point"],[[6,4,66],"point"],[[-6,4,50],"point"]],"lifeblocks":[[-4,5.5,40]],"kakin":[8,4,44],"checkpoints":[[0,0,66]],"enemies":[{"position":[0,0.5,20],"label":"段ボール","axis":[1,0,0],"patrol":5,"speed":4.5},{"position":[-9,0.5,34],"label":"配線","axis":[0,0,1],"patrol":2,"speed":4.5},{"position":[6,0.5,44],"label":"備品リスト","speed":4.5,"chase":5},{"position":[-6,0.5,10],"label":"備品リスト","speed":4.0,"chase":4},{"position":[0,0.5,59],"label":"配線","axis":[1,0,0],"patrol":2.5,"speed":5.5}],"boss":{"position":[0,2,78],"label":"段ボールの山","hp":20,"size":4,"speed":3,"arena":7,"split":"段ボール","far_guard":10},"goal":[0,0,88]},{"name":"社員旅行","floor":"#c9b77c","sky":"#3b2f63","hallucination":0.3,"reward":1000,"ai":20,"par":70,"floors":[[[0,-0.5,37.5],[26,1,95]]],"blocks":[[[-6,0.4,10],[3,0.8,2],"#7a3b1e"],[[6,0.4,14],[3,0.8,2],"#7a3b1e"],[[-6,0.4,26],[3,0.8,2],"#7a3b1e"],[[6,0.4,30],[3,0.8,2],"#7a3b1e"],[[0,0.75,48],[10,1.5,4],"#8b5a2b"]],"qblocks":[[[0,4,6],"coffee"],[[-3,5.5,48],"point"],[[3,5.5,48],"coffee"],[[6,4,20],"point"],[[-4,4,58],"point"]],"lifeblocks":[[0,6.3,48]],"kakin":[[-10,4,36],[10,4,64]],"checkpoints":[[0,0,53]],"enemies":[{"position":[4,0.5,20],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[-4,0.5,38],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.0},{"position":[3,0.5,60],"label":"よっぱらい\n上司","kind":"drunk","patrol":5.5,"speed":4.5},{"position":[-6,0.5,6],"label":"よっぱらい\n上司","kind":"drunk","patrol":4,"speed":3.5},{"position":[7,0.5,40],"label":"よっぱらい\n上司","kind":"drunk","patrol":4.5,"speed":4.0},{"position":[-9,0.5,18],"label":"二次会の\n誘い","speed":4.5,"chase":5},{"position":[0,0.5,32],"label":"一発芸","axis":[1,0,0],"patrol":7,"speed":5.5},{"position":[9,0.5,46],"label":"幹事の\n仕事","axis":[0,0,1],"patrol":3,"speed":4.5},{"position":[-6,0.5,62],"label":"一発芸","axis":[1,0,0],"patrol":5,"speed":5.5},{"position":[8,0.5,24],"label":"二次会の\n誘い","speed":4.5,"chase":4},{"position":[0,0.5,55],"label":"よっぱらい\n上司","kind":"drunk","patrol":5,"speed":4.5},{"position":[-6,0.5,66],"label":"よっぱらい\n上司","kind":"drunk","patrol":3.5,"speed":4},{"position":[6,0.5,52],"label":"二次会の\n誘い","speed":4.5,"chase":5}],"boss":{"position":[0,2,73],"label":"幹事","hp":20,"size":4,"speed":3.5,"arena":8,"shoot_interval":1.3,"shot_label":"出し物\nリクエスト","far_guard":10},"goal":[0,0,82],"droppers":[[[-3,0,42],3,2.0,0,"お土産"],[[3,0,44],3,2.0,1.0,"お土産"],[[0,0,66],4,2.2,0.5,"お土産"]]},{"name":"終電ダッシュ","floor":"#5d6470","sky":"#141a3a","hallucination":0.3,"reward":1100,"ai":16,"par":50,"time_limit":30,"floors":[[[0,-0.5,10],[20,1,40]],[[0,-0.5,55],[20,1,30]],[[0,-0.5,87.5],[20,1,25]]],"blocks":[[[-5,1,8],[3,2,3],"#4e3b2a"],[[5,1,16],[3,2,3],"#4e3b2a"],[[-4,1,24],[3,2,2],"#4e3b2a"],[[6,0.4,84],[3,0.8,1],"#3a5a8a"],[[0,2,101.5],[20,4,3],"#2e8b57"]],"movers":[[[0,-0.25,35],[3,0.5,3],[0,0,1],3,1.0,0]],"conveyors":[[[0,0.05,50],[12,0.1,8],[0,0,-1],5],[[0,0.05,62],[12,0.1,6],[0,0,-1],6]],"qblocks":[[[0,4,4],"coffee"],[[0,4,45],"point"],[[-4,4,78],"coffee"],[[5,4,8],"point"],[[-4,4,68],"point"]],"lifeblocks":[[5,5,16]],"kakin":[-8,4,28],"checkpoints":[[0,0,42],[0,0,77]],"enemies":[{"position":[0,0.5,12],"label":"急ぎの\n電話","speed":4.5,"chase":4},{"position":[6,0.5,24],"label":"明日までの\n資料","axis":[1,0,0],"patrol":2,"speed":4.5},{"position":[-8,0.5,56],"label":"残業命令","axis":[0,0,1],"patrol":4,"speed":6.5},{"position":[7,0.5,46],"label":"エレベーター\n待ち","axis":[1,0,0],"patrol":1,"speed":2.0},{"position":[8,0.5,62],"label":"残業命令","axis":[0,0,1],"patrol":3,"speed":6.5},{"position":[0,0.5,84],"label":"急ぎの\n電話","speed":5.0,"chase":5},{"position":[-5,0.5,30],"label":"急ぎの\n電話","speed":5,"chase":4},{"position":[5,0.5,90],"label":"残業命令","axis":[1,0,0],"patrol":4,"speed":6}],"boss":null,"goal":[0,0,97],"droppers":[[[-3,0,80],3,2.0,0,"明日までの\n資料"],[[3,0,88],3,2.0,1.0,"明日までの\n資料"],[[0,0,58],3,1.8,0.6,"明日までの\n資料"],[[-3,0,92],3,1.8,0.3,"明日までの\n資料"]],"blinkers":[[[0,-0.25,72.5],[3,0.5,3],1.0,1.0,0.0]]},{"name":"人事評価","floor":"#6b4f3a","sky":"#1d2a44","hallucination":0.34,"reward":1500,"ai":26,"par":95,"floors":[[[0,-0.5,7.5],[18,1,35]],[[0,-0.5,49],[18,1,24]],[[0,5.5,82],[18,1,36]]],"blocks":[[[-5,1,6],[3,2,3],"#4e3b2a"],[[5,1,14],[3,2,3],"#4e3b2a"],[[-6,7,70],[2,2,2],"#4e3b2a"]],"blinkers":[[[0,-0.25,27],[3,0.5,3],1.6,1.4,1.2],[[0,-0.25,31],[3,0.5,3],1.6,1.4,0.6],[[0,-0.25,35],[3,0.5,3],1.6,1.4,0.0]],"conveyors":[[[0,0.05,48],[12,0.1,10],[0,0,-1],5]],"movers":[[[0,2.75,62.5],[3,0.5,3],[0,1,0],3,0.6,-1.5708]],"droppers":[[[-5,6,77],3,2.2,0,"差し戻し"],[[5,6,77],3,2.2,1.1,"差し戻し"],[[0,6,72],3,2.4,0.6,"差し戻し"]],"qblocks":[[[0,4,4],"coffee"],[[0,4,52],"point"],[[-4,10,82],"coffee"],[[-4,4,20],"point"],[[4,10,68],"point"]],"lifeblocks":[[5,5,14]],"kakin":[6,10,70],"checkpoints":[[0,0,40],[0,6,66]],"enemies":[{"position":[0,0.5,9],"label":"自己評価\nシート","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[-6,0.5,19],"label":"目標設定","speed":4.0,"chase":4},{"position":[6,0.5,43],"label":"役員","kind":"drunk","patrol":2.5,"speed":2},{"position":[-6,0.5,54],"label":"評価シート","axis":[0,0,1],"patrol":4,"speed":4.5},{"position":[0,6.5,71],"label":"360度\nフィードバック","axis":[1,0,0],"patrol":4,"speed":4.5},{"position":[5,0.5,56],"label":"役員","kind":"drunk","patrol":2.5,"speed":2.5}],"boss":{"position":[0,8,90],"label":"評価面談","hp":22,"size":4,"speed":3.5,"arena":6,"shoot_interval":1.3,"radial":2.2,"shot_label":"評価\nコメント","far_guard":9,"enrage":1.4},"goal":[0,6,98]}]};
 const hex3 = a => '#' + a.map(v => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0')).join('');
 const conv2 = d => d && Object.assign({}, d, { p: d.position, l: d.label, shoot: d.shoot_interval || 0 });
 const STAGES2 = YEAR2.stages.map(st => Object.assign({}, st, { hallu: st.hallucination, blocks: st.blocks || [], qblocks: st.qblocks || [],
   lifeblocks: st.lifeblocks || [], enemies: (st.enemies || []).map(conv2), boss: conv2(st.boss) }));
 for (const [k, [bg, fg]] of Object.entries(YEAR2.labels)) LABEL_COLORS[k] = [hex3(bg), hex3(fg)];
-function isTester() { return !!(G.acct && TESTERS.includes(String(G.acct.name).toLowerCase())); }
 // 「1年目・2年目」はステージの年、「通常・残業・今日のお題」はモード。中では2つを合わせた名前(playMode)を使う
 //   normal / overtime / daily(1年目)、year2 / year2ot(2年目の通常・残業)
-const TEST_ONLY_MODES = ['year2', 'year2ot'];
+const Y2_MODES = ['year2', 'year2ot'];
 function isY2(m = G.playMode) { return m === 'year2' || m === 'year2ot'; }
 function isOT(m = G.playMode) { return m === 'overtime' || m === 'year2ot'; }
 function otParams(m = G.playMode) { return m === 'year2ot' ? OVERTIME2 : OVERTIME; }
 function playOf(year, m) { return year === 2 ? (m === 'overtime' ? 'year2ot' : 'year2') : m; }
-function yearOpen(y) { return y === 1 || isTester(); }     // 2年目はテスト用アカウントだけ(公開するときは条件を変える)
+function yearOpen(y) { return y === 1 || !!G.save.cleared; }     // 2年目は1年目をクリアすると開く
 function selPlay() { return playOf(yearOpen(G.selYear) ? G.selYear : 1, G.selMode); }
 function curStages() { return isY2() ? STAGES2 : STAGES; }
 function stageNo(i = G.stage) { return i + 1 + (isY2() ? STAGES.length : 0); }   // 2年目は 6〜10
@@ -1322,7 +1320,7 @@ function spawnEnemy(d, boss) {
 
 // ---------------- プレイヤー ----------------
 function startRun(ch, mode = selPlay()) {
-  if ((mode === 'overtime' && !overtimeOpen()) || (TEST_ONLY_MODES.includes(mode) && !isTester())) mode = 'normal';
+  if ((mode === 'overtime' && !overtimeOpen()) || (Y2_MODES.includes(mode) && !yearOpen(2))) mode = 'normal';
   G.playMode = mode; G.daily = mode === 'daily' ? dailyOf() : null;
   if (G.daily) ch = CHARS[G.daily.char];
   G.char = ch; G.score = 0; G.lives = (G.daily && G.daily.rule.lives) || 3; G.coffeeUntil = 0; G.rateUntil = 0; G.throwLog = [];
@@ -2165,7 +2163,7 @@ window.addEventListener('keydown', e => {
     if (k === 'Enter' || k === ' ' || k === 'Escape') { e.preventDefault(); openCharsel(); }
   } else if (G.mode === 'stagesel') {  // ステージ選択
     if (k === 'm') { const ms = modesForYear(G.selYear); setSelMode(ms[(ms.indexOf(G.selMode) + 1) % ms.length]); }
-    if (k === 'y' && yearOpen(2)) setSelYear(G.selYear === 2 ? 1 : 2);
+    if (k === 'y') setSelYear(G.selYear === 2 ? 1 : 2);
     if (k === 'ArrowRight' || k === 'd' || k === 'ArrowUp' || k === 'w') { e.preventDefault(); const [c, mx] = selStage(); if (c < mx) moveStage(1); }
     if (k === 'ArrowLeft' || k === 'a' || k === 'ArrowDown' || k === 's') { e.preventDefault(); if (selStage()[0] > 0) moveStage(-1); }
     if (k === 'Enter' || k === ' ') { e.preventDefault(); startRun(CHARS[picked]); }
@@ -2445,17 +2443,17 @@ function refreshCharsel() {
   if (!yearOpen(G.selYear)) G.selYear = 1;
   if (!modesForYear(G.selYear).includes(G.selMode)) G.selMode = 'normal';
   const play = selPlay(), y2 = play === 'year2';
-  $('csYearRow').classList.toggle('hidden', !yearOpen(2));
-  document.querySelectorAll('#csYear [data-y]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.y) === G.selYear)));
-  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span class="pill">🏆 ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${isTester() && sv.best2 ? ` / 2年目 ${sv.best2}` : ''}${isTester() && sv.best2ot ? ` / 2年目残業 ${sv.best2ot}` : ''}</span><span class="pill">${sv.dol}どる</span>` +
+  $('csYearRow').classList.remove('hidden');
+  document.querySelectorAll('#csYear [data-y]').forEach(b => { b.setAttribute('aria-pressed', String(Number(b.dataset.y) === G.selYear)); b.classList.toggle('lock', !yearOpen(Number(b.dataset.y))); });
+  $('csInfo').innerHTML = `<span><b>${escapeHtml(who)}</b>${titleChip(sv.title)}</span><span class="pill">🏆 ${sv.best}${sv.bestOt ? ` / 残業 ${sv.bestOt}` : ''}${sv.best2 ? ` / 2年目 ${sv.best2}` : ''}${sv.best2ot ? ` / 2年目残業 ${sv.best2ot}` : ''}</span><span class="pill">${sv.dol}どる</span>` +
     `<span class="pill">AI ${sv.ammo}${sv.bonusAi ? ' +' + sv.bonusAi : ''}</span><span class="pill">課金 ${sv.special}</span>`;
   document.querySelectorAll('#csMode [data-m]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.m === G.selMode)); b.classList.toggle('lock', b.dataset.m === 'overtime' && !overtimeOpen()); b.classList.toggle('hidden', b.dataset.m === 'daily' && G.selYear === 2); });
   const note = $('csModeNote');
   // 見せないときも場所は取っておく(1年目・2年目・モードで、画面の中身が上下にずれないように)
   $('csStage').classList.toggle('invis', play !== 'normal' && !y2); note.classList.remove('hidden'); note.classList.toggle('invis', play === 'normal' && !y2);
   if (play === 'normal' && !y2) note.textContent = '\u00a0';
-  if (play === 'year2ot') note.textContent = `2年目の残業(テスト中):ステージ6から。敵が速くて硬い・ボスが追ってくる・AIは少なめ・終電は +${OVERTIME2.timeAdd}秒。スコアとどるが ×${OVERTIME2.score}`;
-  if (y2) note.textContent = '2年目編(テスト中・テスト用アカウントだけ):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間';
+  if (play === 'year2ot') note.textContent = `2年目の残業:ステージ6から。敵が速くて硬い・ボスが追ってくる・AIは少なめ・終電は +${OVERTIME2.timeAdd}秒。スコアとどるが ×${OVERTIME2.score}`;
+  if (y2) note.textContent = '2年目編:ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間';
   if (play === 'overtime') note.textContent = `残業モード:ステージ1から。敵が速くて硬い・ボスがどこまでも追ってくる・AIは少なめ。そのかわりスコアとどるが ×${OVERTIME.score}`;
   if (play === 'daily') note.textContent = `今日のお題:${dailyText()}(キャラは固定)`;
   G.startStage = Math.max(0, Math.min(G.startStage, sv.unlocked - 1));
@@ -2747,9 +2745,8 @@ async function gasPost(body, keepalive = false) {
   } finally { clearTimeout(timer); }
 }
 const RANK_SHOW = 10;   // ランキングに出す人数
-async function gasTop(n, key = 'normal', me = '', token = '') {
-  const q = (key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`) + (me ? `&me=${encodeURIComponent(me)}` : '') +
-    (token ? `&token=${encodeURIComponent(token)}` : '');   // テスト中のモード(2年目)は本人のトークンがないと見られない
+async function gasTop(n, key = 'normal', me = '') {
+  const q = (key === 'time' ? `?times=1&n=${n}` : `?n=${n}&mode=${encodeURIComponent(key)}`) + (me ? `&me=${encodeURIComponent(me)}` : '');
   const r = await fetch(ONLINE.url + q); return r.json();
 }
 function nowStamp() {
@@ -3317,7 +3314,7 @@ function introPages() {
       '<li><b>社員証</b>:各ステージに3枚かくれている(1枚500点)</li><li>クリアすると<b>ボーナス</b>:定時(速いほど・最大2000)/ノーミス 1000/AI節約(投げないほど・最大1000)/全員たおした 500</li>' +
       '<li>キャラのスコア倍率(新人×1.5など)は全部にかかる</li></ul><p>速さ・全部回る・AIを使わない、ぜんぶ同時には取れない。どれをねらう?</p>'],
     ['クリアしたあと', '<ul><li><b>残業モード</b>:ステージ5まで進むと開く。敵が速くて硬く、ボスは足場の上をどこまでも追いかけてくる。そのかわりスコアとどるが×1.5。ランキングも別</li>' +
-      (isTester() ? '<li><b>2年目編</b>(テスト中):ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。「出勤する」の画面の「年」で選ぶ。2年目にも残業モードがある。ランキングも別</li>' : '') +
+      '<li><b>2年目編</b>:1年目(ステージ5)をクリアすると開く。ステージ6〜10。点滅する足場・ベルトコンベア・よっぱらい・終電の制限時間。「出勤する」の画面の「年」で選ぶ。2年目にも残業モードがある。ランキングも別</li>' +
       '<li><b>今日のお題</b>:毎日かわるステージ・キャラ・しばり。今日のランキングで競おう</li><li><b>タイムアタック</b>:ステージごとの最速クリアのランキング</li><li><b>今期ランキング</b>:半月ごとにリセット。1位には赤い称号「第〇回王者」</li>' +
       '<li><b>称号</b>:条件をクリアするともらえる。ランキングの名前の横に出る</li><li><b>着せ替え</b>:ガシャで出る。ホームの「着せ替え・キャラ選択」でつけかえ</li></ul>'],
     ['キャラの選び方', '<p>使いやすいキャラほどスコア倍率が低いよ</p>' + chars],
@@ -3379,17 +3376,15 @@ function seasonPrize(sv) {   // 称号がもらえる説明(赤い枠)
   return `<span class="prize">👑 期が終わったときに1位だった人には、赤い特別な称号<span class="ttl champ">第${no}回王者</span>をプレゼント!` +
     `ランキングで名前の横に表示されるよ(次にログインしたときに届きます)</span>`;
 }
-function rankTabs() { return ['season', 'normal', 'overtime', 'daily', 'year2', 'year2ot', 'time'].filter(t => !TEST_ONLY_MODES.includes(t) || isTester()); }   // 2年目はテスト用アカウントだけ
+function rankTabs() { return ['season', 'normal', 'overtime', 'daily', 'year2', 'year2ot', 'time']; }
 function setRankTab(t, stage) {
   if (!rankTabs().includes(t)) t = 'season';
-  document.querySelectorAll('#rkTabs [data-t]').forEach(b => { if (TEST_ONLY_MODES.includes(b.dataset.t)) b.classList.toggle('hidden', !isTester()); });
-  $('rkTabs').querySelector('[data-t=overtime]').textContent = isTester() ? '1年目残業' : '残業';   // 2年目が見える人には「1年目残業」(2年目残業と区別)
   rkTab = t; if (stage) rkStage = stage;
   document.querySelectorAll('#rkTabs [data-t]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
   document.querySelectorAll('#rkStages [data-s]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === rkStage)));
   $('rkStages').classList.toggle('hidden', t !== 'time');
-  $('rkNote').innerHTML = escapeHtml({ season: seasonNote(), normal: 'みんなの自己ベスト(歴代)', overtime: '残業モード(ステージ5まで進むと遊べる)の自己ベスト',
-    daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), year2: '2年目編(ステージ6〜10・テスト中)の自己ベスト(テスト用アカウントにだけ見える)', year2ot: '2年目の残業モード(テスト中)の自己ベスト', time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t]) + (t === 'season' ? seasonPrize() : '');
+  $('rkNote').innerHTML = escapeHtml({ season: seasonNote(), normal: 'みんなの自己ベスト(歴代)', overtime: '1年目の残業モード(ステージ5まで進むと遊べる)の自己ベスト',
+    daily: 'お題:' + dailyText(rkDay ? dailyOf(rkDay) : undefined), year2: '2年目編(ステージ6〜10・1年目をクリアすると遊べる)の自己ベスト', year2ot: '2年目の残業モードの自己ベスト', time: `ステージ${rkStage}を一番速くクリアした人(通常モード)` }[t]) + (t === 'season' ? seasonPrize() : '');
   loadRank();
 }
 async function loadRank() {
@@ -3419,7 +3414,7 @@ async function loadRank() {
   if (hit && Date.now() - hit.t < 30000) return draw(hit.res);
   list.innerHTML = '<li><span></span><span>読み込み中…</span><span></span></li>';
   try {
-    const res = await gasTop(RANK_SHOW, key, me, TEST_ONLY_MODES.includes(key) && G.acct ? G.acct.token : '');
+    const res = await gasTop(RANK_SHOW, key, me);
     rkCache[cacheKey] = { t: Date.now(), res }; draw(res);
   } catch (e) { if (seq === rkSeq) list.innerHTML = '<li><span></span><span>サーバーにつながりませんでした</span><span></span></li>'; }
 }
@@ -3461,13 +3456,13 @@ const TITLES = [
   { id: 'zangyo', name: '残業マスター', desc: '残業モードで全クリ' },
   { id: 'daily', name: 'お題クリア', desc: '今日のお題をクリア' },
   { id: 'kisekae', name: 'おしゃれ番長', desc: '着せ替えをぜんぶ集める' },
-  { id: 'nenme2', name: '2年目突破', desc: '2年目編(ステージ6〜10)をクリア', test: true },
-  { id: 'zangyo2', name: '残業の鬼', desc: '2年目の残業モードで全クリ', test: true },   // テスト中(テスト用アカウントにだけ見える)
+  { id: 'nenme2', name: '2年目突破', desc: '2年目編(ステージ6〜10)をクリア' },
+  { id: 'zangyo2', name: '残業の鬼', desc: '2年目の残業モードで全クリ' },
 ];
 function visibleTitles() {
   const champs = (G.save.titles || []).filter(champNo).sort((a, b) => champNo(a) - champNo(b))
     .map(id => ({ id, name: titleName(id), desc: `第${champNo(id)}回の今期ランキングで1位`, champ: true }));
-  return champs.concat(TITLES.filter(t => !t.test || isTester()));
+  return champs.concat(TITLES);
 }
 const ITEMS = [
   { id: 'tie_red', slot: 'tie', name: '赤ネクタイ', color: '#d7263d' },
@@ -3528,7 +3523,7 @@ function stageAmmo(st, have) {
 }
 const MODE_NAMES = { normal: '通常', overtime: '残業', daily: '今日のお題' };
 function modesForYear(y) { return ['normal', 'overtime', 'daily'].filter(m => (m !== 'overtime' || overtimeOpen() || y === 2) && !(m === 'daily' && y === 2)); }   // お題は1年目だけ
-function setSelYear(y) { if (!yearOpen(y)) { sfx.locked(); return; } G.selYear = y; store.set('selYear', y); refreshCharsel(); }
+function setSelYear(y) { if (!yearOpen(y)) { sfx.locked(); toast('1年目(ステージ5)をクリアすると\n2年目が開くよ', true); return; } G.selYear = y; store.set('selYear', y); refreshCharsel(); }
 function setSelMode(m) {
   if (m === 'overtime' && !overtimeOpen() && G.selYear !== 2) { sfx.locked(); toast('ステージ5まで進むと\n残業モードが開くよ', true); return; }
   if (!['normal', 'overtime', 'daily'].includes(m) || !modesForYear(G.selYear).includes(m)) { sfx.locked(); return; }
@@ -3667,13 +3662,13 @@ function award(id) {
   const sv = G.save, t = TITLES.find(x => x.id === id);
   if (!t || sv.titles.includes(id)) return;
   sv.titles.push(id);
-  if (!sv.title && !t.test) sv.title = id;   // はじめての称号は自動でつける(テスト中の称号はつけない)
+  if (!sv.title) sv.title = id;   // はじめての称号は自動でつける
   sfx.power(); notice(`称号ゲット!\n「${t.name}」`);
 }
 function champNo(id) { const m = /^champ-(\d+)$/.exec(String(id || '')); return m ? Number(m[1]) : 0; }   // 第〇回王者(サーバーが配る)
 function titleName(id) {
   if (champNo(id)) return `第${champNo(id)}回王者`;
-  const t = TITLES.find(x => x.id === id); return t && (!t.test || isTester()) ? t.name : '';   // テスト中の称号はほかの人には見せない
+  const t = TITLES.find(x => x.id === id); return t ? t.name : '';
 }
 function titleChip(id) { const n = titleName(id); return n ? `<span class="ttl${champNo(id) ? ' champ' : ''}">${escapeHtml(n)}</span>` : ''; }
 
@@ -3788,6 +3783,11 @@ $('csLocker').onclick = () => openLocker();
 // 新しいお知らせは、いちばん上に足す。id は前のより大きい数字にすると、キャラ選択に「NEW」が出る
 // (PC版の news.py にも同じ内容を書く)
 const NEWS = [
+  { id: 12, date: '2026/10/26', title: '2年目編を公開しました!', items: [
+    '1年目(ステージ5)をクリアすると「2年目編」(ステージ6〜10)が遊べるようになりました。「出勤する」の画面の「年」で選べます',
+    '点滅する足場・ベルトコンベア・倒せない「よっぱらい上司」・終電の制限時間など、新しいしかけがいっぱい。2年目にも残業モードがあります',
+    'ランキングに「2年目」「2年目残業」のタブができました。称号「2年目突破」「残業の鬼」もねらってみてね',
+  ] },
   { id: 11, date: '2026/10/22', title: 'ホーム画面ができました', items: [
     'ログインしたあとの画面が「ホーム」になりました。今のキャラが、今の着せ替えで歩いています',
     '「出勤する」を押すと、年・モード・スタートするステージを選ぶ画面に。キャラは「着せ替え・キャラ選択」で変えられます',
